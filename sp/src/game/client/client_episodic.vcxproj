@@ -237,15 +237,10 @@ exit 1
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Library Include="..\..\lib\win32\release\VS2010\libprotobuf.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </Library>
-    <Library Include="..\..\lib\win32\debug\VS2010\libprotobuf.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </Library>
     <Library Include="..\..\lib\public\bitmap.lib" />
     <Library Include="..\..\lib\public\choreoobjects.lib" />
     <Library Include="..\..\lib\public\dmxloader.lib" />
+    <Library Include="..\..\lib\public\libprotobuf.lib" />
     <Library Include="..\..\lib\public\mathlib.lib" />
     <Library Include="..\..\lib\public\matsys_controls.lib" />
     <Library Include="..\..\lib\public\particles.lib" />

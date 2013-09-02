@@ -1,10 +1,15 @@
 "GameInfo"
 {
-	game 		"HALF-LIFE-VR"
-	title 		"HALF-L-FE'"
-	title2		""
-
-	type		singleplayer_only
+	gamelogo 1
+	game 			"Half-Life VR"
+	title 			"HALF-LIFE"
+	
+	developer		"Nathan Andrews + Wormslayer"
+	developer_url	"http://www.halflife-vr.com/"
+	
+	type			singleplayer_only
+	icon            "resource/hl2vr"
+	nomodels		0	
 
 	FileSystem
 	{

@@ -19,6 +19,19 @@ ipch
 *.idb
 *.vcxproj
 *.sln
+*.vcxproj.filters
+*.vpc_crc
+*.vpc.sentinel
+
+
+Debug_mod_episodic
+Debug_mod_hl2
+Debug_dx9_mod_episodic
+Debug_dx9_mod_hl2
+Debug
+Release
+generated_proto
+
 
 # OSX/Linux build products
 *.mak

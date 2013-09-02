@@ -30,7 +30,8 @@ enum HeadtrackMovementMode_t
 
 	HMM_LAST,
 
-	HMM_NOOVERRIDE = HMM_LAST		// Used as a retrun from ShouldOverrideHeadtrackControl(), not an actual mode.
+	HMM_NOOVERRIDE = HMM_LAST,		// Used as a retrun from ShouldOverrideHeadtrackControl(), not an actual mode.
+	HMM_SHOOTTRACK  // Shoot per tracked offset & move view relative
 };
 
 

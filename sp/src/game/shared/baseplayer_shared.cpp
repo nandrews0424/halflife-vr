@@ -48,7 +48,9 @@
 #include "decals.h"
 #include "obstacle_pushaway.h"
 #ifdef SIXENSE
-#include "sixense/in_sixense.h"
+
+	#include "sixense/in_sixense.h"
+
 #endif
 
 // NVNT haptic utils

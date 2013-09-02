@@ -100,17 +100,17 @@ public:
 
 #define WATERJUMP_HEIGHT			8
 
-#define MAX_CLIMB_SPEED		200
+#define MAX_CLIMB_SPEED		75
 
 #if defined(TF_DLL) || defined(TF_CLIENT_DLL)
 	#define TIME_TO_DUCK		0.2
 	#define TIME_TO_DUCK_MS		200.0f
 #else
-	#define TIME_TO_DUCK		0.4
-	#define TIME_TO_DUCK_MS		400.0f
+	#define TIME_TO_DUCK		0.7
+	#define TIME_TO_DUCK_MS		700.0f
 #endif 
-#define TIME_TO_UNDUCK		0.2
-#define TIME_TO_UNDUCK_MS	200.0f
+#define TIME_TO_UNDUCK		0.5
+#define TIME_TO_UNDUCK_MS	500.0f
 
 #define MAX_WEAPON_SLOTS		6	// hud item selection slots
 #define MAX_WEAPON_POSITIONS	20	// max number of items within a slot

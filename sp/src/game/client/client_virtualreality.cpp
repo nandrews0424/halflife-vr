@@ -18,6 +18,8 @@
 #include "tier0/vprof_telemetry.h"
 #include <time.h>
 
+#include "vr/vr_controller.h"
+
 CClientVirtualReality g_ClientVirtualReality;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CClientVirtualReality, IClientVirtualReality, 
 	CLIENTVIRTUALREALITY_INTERFACE_VERSION, g_ClientVirtualReality );
@@ -289,8 +291,9 @@ InitReturnVal_t	CClientVirtualReality::Init()
 	InitReturnVal_t nRetVal = BaseClass::Init();
 	if ( nRetVal != INIT_OK )
 		return nRetVal;
-
+	
 	return INIT_OK;
+
 }
 
 
@@ -1384,6 +1387,13 @@ void CClientVirtualReality::OverrideViewModelTransform( Vector & vmorigin, QAngl
 	float fForward = bUseLargeOverride ? vr_viewmodel_offset_forward_large.GetFloat() : vr_viewmodel_offset_forward.GetFloat();
 
 	vmorigin += vForward * fForward;
+
+	// VR TODO: use info here from weapon tracking....
+
+	// Msg("Overriding View model transform.....%f %f %f", vmorigin.x, vmorigin.y, vmorigin.z);
+
+	g_MotionTracker()->update();
+
 	MatrixAngles( m_WorldFromWeapon.As3x4(), vmangles );
 }
 

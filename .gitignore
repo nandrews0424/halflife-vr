@@ -17,11 +17,11 @@ ipch
 *.sdf
 *.opensdf
 *.idb
-*.vcxproj
-*.sln
 *.vcxproj.filters
 *.vpc_crc
 *.vpc.sentinel
+
+sp/game/mod_hl2/save
 
 
 Debug_mod_episodic

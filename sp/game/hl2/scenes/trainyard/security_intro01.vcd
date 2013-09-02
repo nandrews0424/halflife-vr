@@ -146,7 +146,7 @@ actor "Barney"
     }
     event firetrigger "1_Trigger Door Open"
     {
-      time 6.573333 -1.000000
+      time 6.073333 -1.000000
       param "1"
     }
   }

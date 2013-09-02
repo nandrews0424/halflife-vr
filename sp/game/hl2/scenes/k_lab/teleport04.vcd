@@ -93,21 +93,19 @@ actor "Breen"
   }
   channel "seq."
   {
-    event sequence "startle"
+    event sequence "NULL"
     {
       time 0.020000 1.220000
       param "sit_startle"
-	  playoverscript
       fixedlength
     }
-    event sequence "getup"
+    event sequence "NULL"
     {
       time 1.033334 3.033334
       param "get_up"
-	  playoverscript
       fixedlength
     }
-    event sequence "console"
+    event sequence "NULL"
     {
       time 2.840001 5.506668
       param "at_console"
@@ -116,7 +114,6 @@ actor "Breen"
         0.1820 0.9868
         2.6600 1.0000
       }
-	  playoverscript
       fixedlength
     }
   }

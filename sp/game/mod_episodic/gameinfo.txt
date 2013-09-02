@@ -36,10 +36,8 @@
 			// folder.
 			//
 			// Note that this folder is scanned only when the game is booted.
-			game+mod			ep2/custom/*
-			game+mod			episodic/custom/*
-			game+mod			hl2/custom/*
-
+			game+mod			gameinfo_path|*
+			
 			// Now search loose files.  We'll set the directory containing the gameinfo.txt file
 			// as the first "mod" search path (after any user customizations).  This is also the one
 			// that's used when writing to the "mod" path.

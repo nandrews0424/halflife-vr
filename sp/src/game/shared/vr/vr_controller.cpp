@@ -78,6 +78,8 @@ void printVec(float* v)
 
 void MotionTracker::update()
 {
+	return;
+
 	Msg("In motion tracker code....\n");	
 
 	if ( !_initialized  || !_vrIO->hydraConnected() )
@@ -99,10 +101,29 @@ void MotionTracker::update()
 	
 	Msg("Left hand offsets \n");
 	printVec(m.posLeft);
+
+	
 }
 
 
+
+// TODO: get the weapon position based on offsets from center view....
+ 
+void GetWeaponPosition(matrix3x4_t mCenterView)
+{
+
+	
+
+}
+
 /*
+
+
+	VMatrix worldFromTorso;
+	AngleMatrix ( torsoAngles, worldFromTorso.As3x4() );
+	worldFromTorso.SetTranslation ( m_PlayerTorsoOrigin );
+
+
 
 bool	VrController::initialized( void )
 {

@@ -447,6 +447,7 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 	// Figure out the in-game "torso" concept, which corresponds to the player's physical torso.
 	m_PlayerTorsoOrigin = pViewMiddle->origin;
 
+	
 	// Ignore what was passed in - it's just the direction the weapon is pointing, which was determined by last frame's HMD orientation!
 	// Instead use our cached value.
 	QAngle torsoAngles = m_PlayerTorsoAngle;
@@ -454,6 +455,10 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 	VMatrix worldFromTorso;
 	AngleMatrix ( torsoAngles, worldFromTorso.As3x4() );
 	worldFromTorso.SetTranslation ( m_PlayerTorsoOrigin );
+
+
+	
+	
 
 	//// Scale translation e.g. to allow big in-game leans with only a small head movement.
 	//// Clamp HMD movement to a reasonable amount to avoid wallhacks, vis problems, etc.
@@ -466,6 +471,9 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 		viewTranslation *= limit;
 		matMideyeZeroFromMideyeCurrent.SetTranslation( viewTranslation );
 	}
+
+
+	
 
 	// Now figure out the three principal matrices: m_TorsoFromMideye, m_WorldFromMidEye, m_WorldFromWeapon
 	// m_TorsoFromMideye is done so that OverridePlayerMotion knows what to do with WASD.
@@ -512,6 +520,27 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 		m_WorldFromMidEye = worldFromTorso;
 		break;
 
+	case HMM_SHOOTTRACK:
+
+		/* 
+		NA TODO: 
+		
+		Assuming you've now calibrated your tracker inputs, you should be able to apply a torso angles here.... which could be used for movement direction
+		
+		// used for movement & control inputs
+		m_TorsoFromMideye = matMideyeZeroFromMideyeCurrent; unless left hand tracker if available, then we need to use that data to 
+		
+		// position/orientation of view
+		m_WorldFromMidEye = m_WorldFromTorso; don't think we need anything special here...
+
+		// 
+		
+
+
+		*/
+
+
+		break;
 	default: Assert ( false ); break;
 	}
 
@@ -950,6 +979,37 @@ bool CClientVirtualReality::OverridePlayerMotion( float flInputSampleFrametime, 
 			// Restore the translation.
 			m_WorldFromWeapon.SetTranslation ( vWeaponOrigin );
 		}
+		break;
+
+	case HMM_SHOOTTRACK:
+
+
+		/* 
+
+		 NA TODO:  Here's the part where all the weapon stuff seems to be set, need to understand the relationship between this and OverrideView
+
+
+		 */
+
+		// oldAngles are last frame
+		// currAngles are current view orientation (w/ inputs aplied)
+		// newAngles are ref to update which end up back on command
+		// currMotion is input movement before translation
+		// newMotion is ref to update as well....
+
+			
+
+				
+		
+		// Once done, copy updated angles back to matrix other bits reference...
+		AngleMatrix( *pNewAngles, m_WorldFromWeapon.As3x4() );
+		AngleMatrix( m_PlayerTorsoAngle, worldFromTorso.As3x4() );
+		// Restore the translation.
+		m_WorldFromWeapon.SetTranslation ( vWeaponOrigin );
+
+
+
+
 		break;
 	default: Assert ( false ); break;
 	}
@@ -1390,9 +1450,11 @@ void CClientVirtualReality::OverrideViewModelTransform( Vector & vmorigin, QAngl
 
 	// VR TODO: use info here from weapon tracking....
 
-	// Msg("Overriding View model transform.....%f %f %f", vmorigin.x, vmorigin.y, vmorigin.z);
+	
 
-	g_MotionTracker()->update();
+	// g_MotionTracker()->update();
+
+
 
 	MatrixAngles( m_WorldFromWeapon.As3x4(), vmangles );
 }

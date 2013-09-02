@@ -20,6 +20,13 @@ ipch
 *.vcxproj.filters
 *.vpc_crc
 *.vpc.sentinel
+*.pdb
+*.sav
+
+sp/game/bin/*
+
+Release_dx9_mod_hl2
+Release_dx9_mod_episodic
 
 sp/game/mod_hl2/save
 

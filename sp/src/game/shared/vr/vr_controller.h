@@ -26,10 +26,6 @@ protected:
 	IVRIOClient* _vrIO;
 	VMatrix _calibrationMatrix;
 
-
-	
-
-	
  
 /*	QAngle  headOrientation( void );
 	QAngle  weaponOrientation( void );

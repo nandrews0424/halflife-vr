@@ -1,9 +1,6 @@
 #include "cbase.h"
 #include "vr/vr_controller.h"
 
-static ConVar vr_neck_length( "vr_neck_length", "3", 0 );
-static ConVar vr_spine_length( "vr_spine_length", "30", 0 );
-static ConVar vr_swap_trackers( "vr_swap_trackers", "0", 0 );
 static ConVar vr_weapon_movement_scale( "vr_weapon_movement_scale", "1", FCVAR_ARCHIVE, "Scales tracked weapon positional tracking");
 static ConVar vr_offset_calibration("vr_offset_calibration", "1", FCVAR_ARCHIVE, "Toggles offset (right and forward calibration), 0 is less convenient but necessary for 360 setup where there is no frame of reference for forward and side");
 static ConVar vr_hydra_left_hand("vr_hydra_left_hand", "0", 0, "Experimental: Use your left hand hydra for head tracking, 1 is position only, 2 for both position and orientation");
@@ -20,6 +17,9 @@ extern MotionTracker* g_MotionTracker()
 MotionTracker::MotionTracker()
 {
 	Msg("Initializing Motion Tracking API");
+
+	_calibrationMatrix.Identity();
+
 	try 
 	{
 		_vrIO = _vrio_getInProcessClient();
@@ -115,6 +115,29 @@ void GetWeaponPosition(matrix3x4_t mCenterView)
 	
 
 }
+
+bool MotionTracker::isTrackingWeapon( )
+{
+	return _initialized && _vrIO->hydraConnected();
+}
+
+
+void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
+{
+	Hydra_Message m;
+	_vrIO->hydraData(m);
+		
+
+	Vector weaponPosition = Vector(m.posRight[0], m.posRight[1], m.posRight[2]);
+	QAngle weaponAngle = QAngle(m.anglesRight[0], m.anglesRight[1], m.anglesRight[2]);
+	
+	VectorCopy(weaponAngle, vmangles);
+
+//	Msg("VM Angle setting to %f %f %f\n", vmangles.x, vmangles.y, vmangles.z);
+
+	// vmorigin = rightPos - _calibrationMatrix.GetTranslation();
+}
+
 
 /*
 

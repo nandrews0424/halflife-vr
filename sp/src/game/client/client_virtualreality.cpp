@@ -1447,16 +1447,12 @@ void CClientVirtualReality::OverrideViewModelTransform( Vector & vmorigin, QAngl
 	float fForward = bUseLargeOverride ? vr_viewmodel_offset_forward_large.GetFloat() : vr_viewmodel_offset_forward.GetFloat();
 
 	vmorigin += vForward * fForward;
-
-	// VR TODO: use info here from weapon tracking....
-
-	
-
-	// g_MotionTracker()->update();
-
-
-
+		
 	MatrixAngles( m_WorldFromWeapon.As3x4(), vmangles );
+
+	if ( g_MotionTracker()->isTrackingWeapon() ) 
+		g_MotionTracker()->updateViewmodelOffset(vmorigin, vmangles); 
+
 }
 
 

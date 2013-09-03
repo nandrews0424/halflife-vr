@@ -15,11 +15,17 @@ public:
 	MotionTracker( void );
 	~MotionTracker( void );
 	void shutDown( void );
+
+	bool isTrackingWeapon( void );
+	void updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles);
 	void update();
 
 protected:
 	bool _initialized;
+	
 	IVRIOClient* _vrIO;
+	VMatrix _calibrationMatrix;
+
 
 	
 

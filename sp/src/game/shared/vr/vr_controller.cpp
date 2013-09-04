@@ -1,5 +1,12 @@
 #include "cbase.h"
 #include "vr/vr_controller.h"
+#include <sixense_math.hpp>
+
+using sixenseMath::Vector2;
+using sixenseMath::Vector3;
+using sixenseMath::Vector4;
+using sixenseMath::Quat;
+using sixenseMath::Line;
 
 static ConVar vr_weapon_movement_scale( "vr_weapon_movement_scale", "1", FCVAR_ARCHIVE, "Scales tracked weapon positional tracking");
 static ConVar vr_offset_calibration("vr_offset_calibration", "1", FCVAR_ARCHIVE, "Toggles offset (right and forward calibration), 0 is less convenient but necessary for 360 setup where there is no frame of reference for forward and side");
@@ -14,11 +21,71 @@ extern MotionTracker* g_MotionTracker()
 	return _motionTracker;
 }
 
+
+// A bunch of sixense integration crap that needs to be pulled out along w/ vr.io`
+matrix3x4_t ConvertMatrix( sixenseMath::Matrix4 ss_mat )
+{
+	sixenseMath::Matrix4 tmp_mat( ss_mat );
+
+	tmp_mat = tmp_mat * sixenseMath::Matrix4::rotation( -3.1415926f / 2.0f, Vector3( 1, 0, 0 ) );
+	tmp_mat = tmp_mat * sixenseMath::Matrix4::rotation( -3.1415926f / 2.0f, Vector3( 0, 0, 1 ) );
+	tmp_mat = tmp_mat * sixenseMath::Matrix4::rotation( 3.1415926f, Vector3( 0, 1, 0 ) );
+	tmp_mat = sixenseMath::Matrix4::rotation( -3.1415926f / 2.0f, Vector3( 1, 0, 0 ) ) * tmp_mat;
+	tmp_mat = sixenseMath::Matrix4::rotation( -3.1415926f / 2.0f, Vector3( 0, 1, 0 ) ) * tmp_mat;
+		
+	matrix3x4_t retmat;
+
+	MatrixInitialize( 
+		retmat, 
+		Vector( tmp_mat[3][0], tmp_mat[3][1], tmp_mat[3][2] ),
+		Vector( tmp_mat[1][0], tmp_mat[1][1], tmp_mat[1][2] ),
+		Vector( tmp_mat[2][0], tmp_mat[2][1], tmp_mat[2][2] ),
+		Vector( tmp_mat[0][0], tmp_mat[0][1], tmp_mat[0][2] )
+	);
+
+	return retmat;
+}
+
+matrix3x4_t GetLeftMatrix(Hydra_Message m) {
+	sixenseMath::Matrix4 matrix;
+
+	matrix = sixenseMath::Matrix4::rotation( sixenseMath::Quat( m.leftRotationQuat[0], m.leftRotationQuat[1], m.leftRotationQuat[2], m.leftRotationQuat[3] ) );
+	Vector3 ss_left_pos = sixenseMath::Vector3( 
+								MM_TO_INCHES(m.posLeft[0]), 
+								MM_TO_INCHES(m.posLeft[1]), 
+								MM_TO_INCHES(m.posLeft[2])
+							);
+	
+	matrix.set_col( 3, sixenseMath::Vector4( ss_left_pos, 1.0f ) );
+
+	return ConvertMatrix(matrix);
+}
+
+matrix3x4_t GetRightMatrix(Hydra_Message m) {
+	sixenseMath::Matrix4 matrix;
+
+	matrix = sixenseMath::Matrix4::rotation( sixenseMath::Quat( m.rightRotationQuat[0], m.rightRotationQuat[1], m.rightRotationQuat[2], m.rightRotationQuat[3] ) );
+	
+	Vector3 ss_left_pos = sixenseMath::Vector3( 
+								MM_TO_INCHES(m.posRight[0]), 
+								MM_TO_INCHES(m.posRight[1]), 
+								MM_TO_INCHES(m.posRight[2])
+							);
+	matrix.set_col( 3, sixenseMath::Vector4( ss_left_pos, 1.0f ) );
+
+	return ConvertMatrix(matrix);
+}
+
+
 MotionTracker::MotionTracker()
 {
 	Msg("Initializing Motion Tracking API");
 
 	_calibrationMatrix.Identity();
+	_matLeftHand.Identity();
+	_matRightHand.Identity();
+
+	_counter = 0;
 
 	try 
 	{
@@ -112,8 +179,6 @@ void MotionTracker::update()
 void GetWeaponPosition(matrix3x4_t mCenterView)
 {
 
-	
-
 }
 
 bool MotionTracker::isTrackingWeapon( )
@@ -126,398 +191,21 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 {
 	Hydra_Message m;
 	_vrIO->hydraData(m);
-		
 
-	Vector weaponPosition = Vector(m.posRight[0], m.posRight[1], m.posRight[2]);
-	QAngle weaponAngle = QAngle(m.anglesRight[0], m.anglesRight[1], m.anglesRight[2]);
+	matrix3x4_t leftHandMatrix = GetLeftMatrix(m);
+	matrix3x4_t rightHandMatrix = GetRightMatrix(m);
 	
+	QAngle weaponAngle;
+	Vector weaponPos;
+
+	MatrixAngles(rightHandMatrix, weaponAngle, weaponPos);
+	
+	_counter++;
+	if ( (_counter % 30) == 0 ) {
+		Msg("Weapon Angle: %.2f %.2f %.2f\n\n", weaponAngle.x, weaponAngle.y, weaponAngle.z);
+		Msg("Weapon Position: %.2f %.2f %.2f\n", weaponPos.x, weaponPos.y, weaponPos.z);
+	}
+		
 	VectorCopy(weaponAngle, vmangles);
-
-//	Msg("VM Angle setting to %f %f %f\n", vmangles.x, vmangles.y, vmangles.z);
-
-	// vmorigin = rightPos - _calibrationMatrix.GetTranslation();
+	vmorigin += weaponPos;
 }
-
-
-/*
-
-
-	VMatrix worldFromTorso;
-	AngleMatrix ( torsoAngles, worldFromTorso.As3x4() );
-	worldFromTorso.SetTranslation ( m_PlayerTorsoOrigin );
-
-
-
-bool	VrController::initialized( void )
-{
-
-	return _initialized && _vrIO->getChannelCount() > 0; //for now
-}
-
-QAngle	VrController::headOrientation( void )
-{
-	return _headAngle;
-}
-
-QAngle	VrController::weaponOrientation( void )
-{
-	return _weaponAngle;
-}
-
-QAngle	VrController::leftHandOrientation( void )
-{
-	return _leftHandAngle;
-}
-
-QAngle	VrController::bodyOrientation( void )
-{
-	return _bodyAngle;
-}
-
-
-bool	VrController::hydraConnected( void )
-{
-	return _initialized && _vrIO->hydraConnected();
-}
-
-// TODO: would be better to expose these not as "hydra" controllers
-
-void	VrController::hydraRight(HydraControllerData &data)
-{
-	Hydra_Message m;
-	
-	_vrIO->hydraData(m);
-	
-	data.init();
-	data.angle.Init(m.anglesRight[0], m.anglesRight[1], m.anglesRight[2]);
-	data.pos.Init(m.posRight[0], m.posRight[1], m.posRight[2]);
-	data.xAxis = m.rightJoyX;
-	data.yAxis = m.rightJoyY;
-}
-
-void	VrController::hydraLeft(HydraControllerData &data)
-{
-	Hydra_Message m;
-	
-	_vrIO->hydraData(m);
-	
-	data.init();
-	data.angle.Init(m.anglesLeft[0], m.anglesLeft[1], m.anglesLeft[2]);
-	data.pos.Init(m.posLeft[0], m.posLeft[1], m.posLeft[2]);
-	data.xAxis = m.leftJoyX;
-	data.yAxis = m.leftJoyY;
-}
-	
-bool VrController::hasHeadTracking( void )
-{
-	return _initialized && ( (_vrIO->getChannelCount() >  1) || ( _vrIO->getChannelCount() == 1 && !hydraConnected() ) );
-}
-
-bool VrController::hasWeaponTracking( void ) 
-{
-	return _initialized && (_vrIO->getChannelCount() > 1 || _vrIO->hydraConnected());  
-}
-
-bool VrController::hasLeftHandTracking( void )
-{
-	return hydraConnected();
-}
-
-bool VrController::hasAnalogInputs( void )
-{
-	return hydraConnected();
-}
-
-void	VrController::update(float previousViewYaw)
-{
-	if (_vrIO->getChannelCount() == 0) { //todo: check vrIO state
-		Msg("Trackers not initialized properly, nothing to do here...\n");
-		return;
-	}
-	
-	VRIO_Message message;
-	_vrIO->think();
-	
-
-	VRIO_Channel headChannel = HEAD;
-	VRIO_Channel weaponChannel = WEAPON;
-	if ( vr_swap_trackers.GetBool() && _vrIO->getChannelCount() == 2 )
-	{
-		headChannel = WEAPON;
-		weaponChannel = HEAD;
-	}
-	
-	// HEAD ORIENTATION
-	
-	
-	_vrIO->getOrientation(headChannel, message);
-		
-	_headAngle[PITCH] = message.pitch;
-	_headAngle[ROLL] = message.roll;
-	_headAngle[YAW] = message.yaw;
-
-	// TODO: temp hack for experimental hydra mode...
-	if ( vr_hydra_left_hand.GetInt() >= 2 )
-	{
-		HydraControllerData d;
-		hydraLeft(d);
-		_headAngle = d.angle;
-	}
-			
-	float previousYaw = _previousYaw[HEAD];
-	float currentYaw = _headAngle[YAW];
-	float deltaYaw = currentYaw - previousYaw;
-	
-	_headAngle[YAW] = deltaYaw + previousViewYaw;
-	_previousYaw[HEAD] = currentYaw; 
-	_totalAccumulatedYaw[HEAD] += deltaYaw;
-	_headAngle -= _headCalibration; 
-
-	// Msg("Head angle %.1f %.1f %.1f\n", _headAngle.x, _headAngle.y, _headAngle.z);
-
-	// BODY ORIENTATION
-
-	// without additional tracking it is simply the head angle minus the total accumulated head yaw
-	VectorCopy(_headAngle, _bodyAngle);
-	_bodyCalibration[YAW] += deltaYaw;  // any head movement is negated from body orientation
-	_bodyAngle -= _bodyCalibration;
-	_bodyAngle[YAW] = previousViewYaw - _bodyCalibration[YAW];
-
-	// WEAPON ORIENTATION
-
-	if (!hasWeaponTracking()) 
-	{
-		VectorCopy(_headAngle, _weaponAngle);
-		return;		 
-	}
-
-	_vrIO->getOrientation(weaponChannel, message);
-	_weaponAngle[PITCH] = message.pitch;
-	_weaponAngle[ROLL] = message.roll;
-	_weaponAngle[YAW] = message.yaw;
-				
-	previousYaw = _previousYaw[WEAPON];
-	currentYaw = _weaponAngle[YAW];
-	deltaYaw = currentYaw - previousYaw;
-
-	_previousYaw[WEAPON] = currentYaw;
-	_totalAccumulatedYaw[WEAPON] += deltaYaw;
-	_weaponAngle[YAW] = previousViewYaw + _totalAccumulatedYaw[WEAPON] - _totalAccumulatedYaw[HEAD];
-
-	_weaponAngle -= _weaponCalibration;
-
-	
-	// LEFT HAND ORIENTATION
-	
-	if ( !hydraConnected() )
-		return;
-
-	HydraControllerData d;
-	hydraLeft(d);
-	
-	_leftHandAngle = d.angle;
-				
-	previousYaw = _previousYaw[LEFT_HAND];
-	currentYaw = _leftHandAngle[YAW];
-	deltaYaw = currentYaw - previousYaw;
-
-	_previousYaw[LEFT_HAND] = currentYaw;
-	_totalAccumulatedYaw[LEFT_HAND] += deltaYaw;
-	_leftHandAngle[YAW] = previousViewYaw + _totalAccumulatedYaw[LEFT_HAND] - _totalAccumulatedYaw[HEAD];
-
-	_leftHandAngle -= _leftHandCalibration;
-};
-
-void VrController::calibrate()
-{
-	VectorCopy(_headAngle + _headCalibration, _headCalibration);
-	_headCalibration[YAW] = 0;
-
-	VectorCopy(_weaponAngle + _weaponCalibration, _weaponCalibration);
-	calibrateWeapon();
-}
-
-// This recenters all elements
-void VrController::calibrateWeapon() {
-	
-	Msg("Calibrating weapon: \n");
-	
-	VRIO_Message head, weapon;
-	
-	if ( !vr_swap_trackers.GetBool() )
-	{
-		_vrIO->getOrientation(HEAD, head);
-		_vrIO->getOrientation(WEAPON, weapon);
-	}
-	else 
-	{
-		_vrIO->getOrientation(WEAPON, head);
-		_vrIO->getOrientation(HEAD, weapon);
-	}
-
-	HydraControllerData d;
-	hydraLeft(d);
-	
-	// zero out the calibrations except yaw, all the trackers I'm 
-
-	if ( hydraConnected() ) {
-		_leftHandCalibration[PITCH] = 0;
-		_leftHandCalibration[ROLL] = 0;
-		_weaponCalibration[PITCH] = 0;
-		_weaponCalibration[ROLL] = 0;
-	}
-	
-	_weaponCalibration[YAW] = weapon.yaw - head.yaw;
-	_leftHandCalibration[YAW] = d.angle[YAW] - head.yaw;
-	_bodyCalibration[YAW] = 0;
-	
-	// todo: if weapon tracking only 
-
-	Vector weapOffset;
-	getWeaponOffset(weapOffset, false);
-
-	Msg("Zeroing weapon offsets %.1f %.1f %.1f\n", weapOffset.x, weapOffset.y, weapOffset.z);
-	// todo: here we want to do a bit of offset handling for calibrating at the shoulder as that seems to be the standard with a hydra
-	
-	Vector shoulderCalibrationOffset;
-	if ( vr_offset_calibration.GetBool() )
-		shoulderCalibrationOffset.Init(-2, -2, 2);
-	else
-		shoulderCalibrationOffset.Init(0, 0, 5);  // no forward or side offset for 360 setup until we can explicitly track body frame to apply "forward" and "side" to
-	
-	_weaponOffsetCalibration = weapOffset + shoulderCalibrationOffset;
-
-	// todo: So much cleanup needs to be done here....
-	Vector offset;
-	getLeftHandOffset(offset, false);
-	shoulderCalibrationOffset[YAW] *= -1; // left controller should be mirrored position to right
-	_leftHandOffsetCalibration = offset + shoulderCalibrationOffset;
-}
-
-void VrController::shutDown()
-{
-	if (_initialized)
-	{
-		Msg("Shutting down VR Controller");
-		_initialized = false;
-		_vrIO->dispose();
-	}
-	else 
-	{
-		Msg("VR Controller already shut down, nothing to do here.");
-	}
-	// delete _vrIO; 
-}
-
-extern VrController* VR_Controller()
-{
-	return _vrController;
-}
-
-void VrController::getHeadOffset(Vector &headOffset, bool calibrated)
-{
-	// HACK: Just temporarily dabbling with left hand positional stuff, there's a more proper place to put this but for the moment this is fine
-	if ( vr_hydra_left_hand.GetInt() >= 1 )
-	{
-		getLeftHandOffset(headOffset, true);
-		return;
-	}
-
-
-
-	float neckLength = vr_neck_length.GetFloat();
-	headOffset.z -= neckLength;
-	
-	QAngle headAngle = headOrientation();
-		
-	Vector up;
-	AngleVectors(headAngle, NULL, NULL, &up);
-	headOffset += up*neckLength;
-	
-	// TODO: collision detection necessary with larger sizes 
-	// Msg("getHeadOffset(%.1f) position %f %f %f\n", neckLength, headOffset.x, headOffset.y, headOffset.z);
-}
-
-void VrController::getWeaponOffset(Vector &offset, bool calibrated)
-{
-	offset.Init();
-	if ( hydraConnected() )
-	{
-		HydraControllerData data;
-		hydraRight(data);
-
-		offset.y = MM_TO_INCHES(data.pos.x);
-		offset.z = MM_TO_INCHES(data.pos.y);
-		offset.x = -MM_TO_INCHES(data.pos.z);
-		
-		if (calibrated)
-		{
-			offset -= _weaponOffsetCalibration; // weapon calibration is stored in hydra-space
-
-			// orient weapon offset with the body as the hydra base stays body relative (but dump any pitch & roll, only care about yaw)
-			QAngle body(0, bodyOrientation().y, 0);
-			Vector forward, right, up;
-			AngleVectors(body, &forward, &right, &up);
-			offset = forward*offset.x + right*offset.y + up*offset.z;
-
-			offset *= vr_weapon_movement_scale.GetFloat();
-
-		}
-	}
-} 
-
-
-void VrController::getLeftHandOffset(Vector &offset, bool calibrated)
-{
-	offset.Init();
-	if ( hydraConnected() )
-	{
-		HydraControllerData data;
-		hydraLeft(data);
-
-		offset.y = MM_TO_INCHES(data.pos.x);
-		offset.z = MM_TO_INCHES(data.pos.y);
-		offset.x = -MM_TO_INCHES(data.pos.z);
-		
-		if (calibrated)
-		{
-			offset -= _leftHandOffsetCalibration; // weapon calibration is stored in hydra-space
-
-			// orient weapon offset with the body as the hydra base stays body relative (but dump any pitch & roll, only care about yaw)
-			QAngle body(0, bodyOrientation().y, 0);
-			Vector forward, right, up;
-			AngleVectors(body, &forward, &right, &up);
-			offset = forward*offset.x + right*offset.y + up*offset.z;
-
-			offset *= vr_weapon_movement_scale.GetFloat();
-
-		}
-	}
-} 
-
-
-
-
-HmdInfo VrController::hmdInfo()
-{
-       HmdInfo h;
-
-       HMDDeviceInfo info = _vrIO->getHMDInfo();
-
-       for (int i=0;i<4;i++)
-               h.DistortionK[i] = info.DistortionK[i];
-
-       h.HResolution = info.HResolution;
-       h.HScreenSize = info.HScreenSize;
-       h.VResolution = info.VResolution;
-       h.VScreenSize = info.VScreenSize;
-       h.VScreenCenter = info.VScreenCenter;
-       h.InterpupillaryDistance = info.InterpupillaryDistance;
-       h.LensSeparationDistance = info.LensSeparationDistance;
-       h.EyeToScreenDistance = info.EyeToScreenDistance;
-
-       return h;
-}
-
-
-*/

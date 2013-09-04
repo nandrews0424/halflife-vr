@@ -539,6 +539,12 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 
 		*/
 
+		// temp call....
+		g_MotionTracker()->update();
+
+
+
+
 
 		break;
 	default: Assert ( false ); break;

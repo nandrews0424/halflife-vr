@@ -69,10 +69,20 @@ struct Hydra_Message
 	float posRight[3];
 	float posLeft[3];
 
+	// matrix
+	float matrixRight[3][3];
+	float matrixLeft[3][3];
+	
+	// quaternions
+	float rightRotationQuat[4];
+	float leftRotationQuat[4];
+	
 	// joystick positions
 	float rightJoyX;
 	float rightJoyY;
 	
+	
+
 	float leftJoyX;
 	float leftJoyY;
 	
@@ -83,6 +93,10 @@ struct Hydra_Message
 			anglesLeft[i]=0;
 			posRight[i]=0;
 			posLeft[i]=0;
+			for (int j=0; j<3; j++) {
+				matrixRight[i][j] = 0;
+				matrixLeft[i][j] = 0;
+			}
 		}
 
 		rightJoyX=0;

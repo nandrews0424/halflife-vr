@@ -25,7 +25,12 @@ protected:
 	
 	IVRIOClient* _vrIO;
 	VMatrix _calibrationMatrix;
+	
+	// caches last read value...
+	VMatrix _matRightHand;
+	VMatrix _matLeftHand;
 
+	unsigned int _counter;
  
 /*	QAngle  headOrientation( void );
 	QAngle  weaponOrientation( void );

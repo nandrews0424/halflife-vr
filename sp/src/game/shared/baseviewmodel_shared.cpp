@@ -13,6 +13,7 @@
 #include "prediction.h"
 #include "client_virtualreality.h"
 #include "headtrack/isourcevirtualreality.h"
+#include "vr/vr_controller.h"
 #else
 #include "vguiscreen.h"
 #endif
@@ -395,7 +396,7 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 	if ( pWeapon != NULL )
 	{
 #if defined( CLIENT_DLL )
-		if ( !prediction->InPrediction() )
+		if ( !prediction->InPrediction() && !g_MotionTracker()->isTrackingWeapon())
 #endif
 		{
 			// add weapon-specific bob 
@@ -406,19 +407,21 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 		}
 	}
 	// Add model-specific bob even if no weapon associated (for head bob for off hand models)
-	AddViewModelBob( owner, vmorigin, vmangles );
+	// AddViewModelBob( owner, vmorigin, vmangles );
 #if !defined ( CSTRIKE_DLL )
 	// This was causing weapon jitter when rotating in updated CS:S; original Source had this in above InPrediction block  07/14/10
 	// Add lag
-	CalcViewModelLag( vmorigin, vmangles, vmangoriginal );
+	// NA TODO: leave these in for non-weapon tracking (which I don't really care about atm 
+	// CalcViewModelLag( vmorigin, vmangles, vmangoriginal );
 #endif
 
 #if defined( CLIENT_DLL )
-	if ( !prediction->InPrediction() )
+	if ( !prediction->InPrediction() && !g_MotionTracker()->isTrackingTorso())
 	{
 		// Let the viewmodel shake at about 10% of the amplitude of the player's view
 		vieweffects->ApplyShake( vmorigin, vmangles, 0.1 );	
 	}
+	
 #endif
 
 	if( UseVR() )

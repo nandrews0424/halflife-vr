@@ -17,69 +17,38 @@ public:
 	void shutDown( void );
 
 	bool isTrackingWeapon( void );
-	void updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles);
-	void update();
-
+	bool isTrackingTorso( void );
+	
+	void beginCalibration();
+	void update(VMatrix& torsoMatrix);
+		
+	void	updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles);		// hooks clientvr	for now, can move directly into viewmodel_shared
+	void	overrideViewOffset(VMatrix& viewMatrix);						// hooks clientvr,	updates the view matrix based on torso tracked offsets
+	void	overrideWeaponMatrix(VMatrix& weaponMatrix);					// hooks clientvr	player motion, updates weapon matrix per tracked values
+	void	overrideMovement(Vector& movement);								// hooks clientvr,	allows movement vector to be adjusted to account for tracked torso
+	
 protected:
 	bool _initialized;
+	bool _calibrate;
 	
 	IVRIOClient* _vrIO;
-	VMatrix _calibrationMatrix;
+	matrix3x4_t _calibrationMatrix;
 	
-	// caches last read value...
-	VMatrix _matRightHand;
-	VMatrix _matLeftHand;
+	matrix3x4_t _matRightHand;
+	matrix3x4_t _matLeftHand;
+	matrix3x4_t _sixenseToWorld;
+	matrix3x4_t _eyesToTorsoTracker;
+	
+	float	_baseEngineYaw;
+	float	_prevYawTorso;
+	float	_accumulatedYawTorso;
+
 
 	unsigned int _counter;
  
-/*	QAngle  headOrientation( void );
-	QAngle  weaponOrientation( void );
-	QAngle  leftHandOrientation( void );
-	QAngle  bodyOrientation( void );
-	void	update( float originalYaw );
-	void	calibrate( void );
-	void	calibrateWeapon( void );
-
-	bool	hydraConnected( void );
-	void	hydraRight(HydraControllerData &data);
-	void	hydraLeft(HydraControllerData &data);
-	 
-	HmdInfo hmdInfo( void );
-
-	bool	initialized( void );
-	bool	hasHeadTracking( void );
-	bool	hasWeaponTracking( void );
-	bool	hasLeftHandTracking( void );
-	bool	hasAnalogInputs( void );
-	
-	void	getHeadOffset(Vector &headOffset, bool calibrated=true);
-	void	getWeaponOffset(Vector &offset, bool calibrated=true);
-	void	getLeftHandOffset(Vector &offset, bool calibrated=true);
-				
-protected:
-	float _totalAccumulatedYaw[SENSOR_COUNT];
-
-	float _previousYaw[SENSOR_COUNT];
-	bool _initialized;
-	
-	IVRIOClient* _vrIO;
-	
-
-	QAngle _headAngle;
-	QAngle _headCalibration;
-	QAngle _weaponAngle;
-	QAngle _leftHandAngle;
-	QAngle _weaponCalibration;
-	QAngle _leftHandCalibration;
-	QAngle _bodyCalibration;
-	QAngle _bodyAngle;
-	Vector _weaponOffsetCalibration;
-	Vector _leftHandOffsetCalibration;
-
-	unsigned int _updateCounter; */
-
-
-
+	matrix3x4_t getTrackedTorso();
+	void calibrate(VMatrix& torsoMatrix);
+	bool		writeDebug();
 };
 
 MotionTracker* g_MotionTracker();

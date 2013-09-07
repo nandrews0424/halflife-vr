@@ -1090,12 +1090,15 @@ void CInput::ExtraMouseSample( float frametime, bool active )
 		{
 			QAngle curViewangles, newViewangles;
 			Vector curMotion, newMotion;
+			
 			engine->GetViewAngles( curViewangles );
 			curMotion.Init ( 
 				cmd->forwardmove,
 				cmd->sidemove,
 				cmd->upmove );
+
 			g_ClientVirtualReality.OverridePlayerMotion ( frametime, originalViewangles, curViewangles, curMotion, &newViewangles, &newMotion );
+			
 			engine->SetViewAngles( newViewangles );
 			cmd->forwardmove = newMotion[0];
 			cmd->sidemove = newMotion[1];

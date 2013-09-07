@@ -28,6 +28,8 @@
 #include "math.h"
 #include "tier1/convar_serverbounded.h"
 #include "cam_thirdperson.h"
+#include "vr/vr_controller.h"
+
 
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
@@ -98,6 +100,11 @@ static ConVar option_duck_method_default( "option_duck_method_default", "1.0", F
 static ConVar joy_inverty_default( "joy_inverty_default", "0", FCVAR_ARCHIVE_XBOX );				// Extracted & saved from profile
 static ConVar joy_movement_stick_default( "joy_movement_stick_default", "0", FCVAR_ARCHIVE_XBOX );	// Extracted & saved from profile
 static ConVar sv_stickysprint_default( "sv_stickysprint_default", "0", FCVAR_NONE );
+
+// motion tracker
+static ConVar mt_input_override( "mt_input_override", "1", FCVAR_ARCHIVE, "Override analog stick inputs from hydra / other integrated devices");
+
+
 
 void joy_movement_stick_Callback( IConVar *var, const char *pOldString, float flOldValue )
 {
@@ -675,9 +682,15 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 		m_fJoystickAdvancedInit = true;
 	}
 
+
+	bool motionTrackerHasJoystick = mt_input_override.GetBool();
+
+
+
 	// Verify that the user wants to use the joystick
-	if ( !in_joystick.GetInt() )
-		return;
+	if ( (!in_joystick.GetInt() || 0 == inputsystem->GetJoystickCount()) && !motionTrackerHasJoystick)
+		return; 
+
 
 	// Reinitialize the 'advanced joystick' system if hotplugging has caused us toggle between some/none joysticks.
 	bool haveJoysticks = ( inputsystem->GetJoystickCount() > 0 );
@@ -688,7 +701,7 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 	}
 
 	// Verify that a joystick is available
-	if ( !haveJoysticks )
+	if ( !haveJoysticks && !motionTrackerHasJoystick )
 		return; 
 
 	if ( m_flRemainingJoystickSampleTime <= 0 )
@@ -734,7 +747,14 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 		gameAxes[idx].value = fAxisValue;
 		gameAxes[idx].controlType = m_rgAxes[i].ControlMap;
 	}
-
+	
+	g_MotionTracker()->overrideJoystickInputs(
+		gameAxes[GAME_AXIS_SIDE].value,
+		gameAxes[GAME_AXIS_FORWARD].value,
+		gameAxes[GAME_AXIS_YAW].value,
+		gameAxes[GAME_AXIS_PITCH].value
+	);
+	
 	// Re-map the axis values if necessary, based on the joystick configuration
 	if ( (joy_advanced.GetInt() == 0) && (in_jlook.state & 1) )
 	{

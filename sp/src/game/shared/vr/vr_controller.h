@@ -26,7 +26,7 @@ public:
 	void	overrideViewOffset(VMatrix& viewMatrix);						// hooks clientvr,	updates the view matrix based on torso tracked offsets
 	void	overrideWeaponMatrix(VMatrix& weaponMatrix);					// hooks clientvr	player motion, updates weapon matrix per tracked values
 	void	overrideMovement(Vector& movement);								// hooks clientvr,	allows movement vector to be adjusted to account for tracked torso
-	
+	void	overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry);		// in_joystick, allows hydra inputs to apply over others
 protected:
 	bool _initialized;
 	bool _calibrate;

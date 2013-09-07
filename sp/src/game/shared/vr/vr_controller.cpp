@@ -238,24 +238,15 @@ void MotionTracker::overrideWeaponMatrix(VMatrix& weaponMatrix)
 
 void MotionTracker::overrideMovement(Vector& movement)
 {
-	return; // TODO: This is not properly rotating the movement vector......
-	
-	if ( writeDebug() ) 
-		Msg("Before override \t: %.2f %.2f %.2f \n", movement.x, movement.y, movement.z); 
+	QAngle angle;
+	VectorAngles(movement, angle);
 
-	matrix3x4_t mat;
-	MatrixBuildRotationAboutAxis(Vector(0, 0, 1), -_accumulatedYawTorso, mat);
-	VectorRotate(movement, mat, movement);
-
-	if ( writeDebug() ) {
-		Msg("After override \t: %.2f %.2f %.2f \n", movement.x, movement.y, movement.z); 
-
-		QAngle a;
-		MatrixAngles(mat, a);
-		Msg("Mtx angles \t: %.2f %.2f %.2f \n", a.x, a.y, a.z);
-	}
+	float dist = movement.Length();
+	angle.y -= _accumulatedYawTorso;
+	AngleVectors(angle, &movement);
+	movement.NormalizeInPlace();
+	movement*=dist;
 }
-
 
 // Update uses the inbound torso (view if no rift) angles and uses them update / the base matrix that should be applied to sixense inputs....
 void MotionTracker::update(VMatrix& torsoMatrix)
@@ -299,7 +290,6 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	
 	_baseEngineYaw = engineTorsoAngles.y;
 	
-
 	// Adjust _sixenseToWorld to account for additional yaw ( even if not lined up with base station ) 
 
 
@@ -308,6 +298,17 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	_calibrate = false;
 }
 
+
+void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry)
+{
+	Hydra_Message m;
+	_vrIO->hydraData(m);
+
+	ly = m.leftJoyY * 32766;
+	lx = m.leftJoyX * 32766;
+	ry = m.rightJoyY * 32766;
+	rx = m.rightJoyX * 32766;
+}
 
 
 bool MotionTracker::writeDebug() {

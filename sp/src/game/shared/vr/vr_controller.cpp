@@ -90,8 +90,9 @@ MotionTracker::MotionTracker()
 	_prevYawTorso = 0;
 	_accumulatedYawTorso = 0;
 	_counter = 0;
-	
-	
+	_calibrate = true;
+
+		
 	// todo: fake for now, need to figure out a way to capture this in calibration step...
 	PositionMatrix(Vector(0, 0, -12), _eyesToTorsoTracker);
 
@@ -173,31 +174,28 @@ matrix3x4_t MotionTracker::getTrackedTorso()
 
 void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 {
+
 	Hydra_Message m;
 	_vrIO->hydraData(m);
 
 	matrix3x4_t weaponMatrix	= GetRightMatrix(m);
 	matrix3x4_t torsoMatrix		= getTrackedTorso();
 	
+	QAngle weaponAngle;
+	Vector weaponPos;
+
+	// get raw torso and weap positions, construct the distance from the diff of those two + the distance to the eyes from a properly calibrated torso tracker...
 	Vector vTorso, vWeapon, vEyes;
 	MatrixPosition(torsoMatrix, vTorso);
 	MatrixPosition(weaponMatrix, vWeapon);
 	MatrixPosition(_eyesToTorsoTracker, vEyes);
-
-	QAngle weaponAngle;
-	Vector weaponPos;
-
-	Vector vEyesToWeapon = vWeapon + vEyes;  // was ( weapon - torso ) but since at this point the torso changes haven't been applied (get overridden in the view), that's unnecessary...
 	
-	if ( writeDebug() && false ) 
-	{
-		Msg("Eyes to torso:		%.2f %.2f %.2f\n", vEyes.x, vEyes.y, vEyes.z);
-		Msg("Eyes to weapon:	%.2f %.2f %.2f\n", vEyesToWeapon.x, vEyesToWeapon.y, vEyesToWeapon.z);
-	}
-
-	PositionMatrix(vEyesToWeapon, weaponMatrix);						// position is reset rather than distance to base to distance to torso tracker
-	MatrixMultiply(_sixenseToWorld, weaponMatrix, weaponMatrix);		// project weapon matrix by the base engine yaw
+	Vector vEyesToWeapon = (vWeapon - _vecBaseToTorso)  + vEyes;  // was ( weapon - torso ) but since at this point the torso changes haven't been applied (get overridden in the view), that's unnecessary...
 		
+	PositionMatrix(vEyesToWeapon, weaponMatrix);						// position is reset rather than distance to base to distance to torso tracker
+	
+	MatrixMultiply(_sixenseToWorld, weaponMatrix, weaponMatrix);		// project weapon matrix by the base engine yaw
+	
 	MatrixAngles(weaponMatrix, weaponAngle, weaponPos);					// get the angles back off
 	VectorCopy(weaponAngle, vmangles);
 	vmorigin += weaponPos;
@@ -205,18 +203,19 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 
 void MotionTracker::overrideViewOffset(VMatrix& viewMatrix)
 {
-	
 	matrix3x4_t torsoMatrix = getTrackedTorso();
-	MatrixMultiply(_sixenseToWorld, torsoMatrix, torsoMatrix);
+	Vector offset;
+	MatrixPosition(torsoMatrix, offset);
+	offset -= _vecBaseToTorso;
+	PositionMatrix(offset, torsoMatrix);
 
+	// TODO: NA - for whatever reason couldn't seem to get a functioning calibration matrix, too long a day I guess
+
+	MatrixMultiply(_sixenseToWorld, torsoMatrix, torsoMatrix);
+			
 	Vector torsoOffset;
 	MatrixPosition(torsoMatrix, torsoOffset);
-
-	if ( writeDebug() && false ) 
-	{
-		Msg("View Offset:	%.2f %.2f %.2f\n", torsoOffset.x, torsoOffset.y, torsoOffset.z);
-	}
-
+		
 	Vector viewTranslation = viewMatrix.GetTranslation();
 	viewTranslation += torsoOffset;
 	viewMatrix.SetTranslation(viewTranslation);
@@ -238,6 +237,8 @@ void MotionTracker::overrideWeaponMatrix(VMatrix& weaponMatrix)
 
 void MotionTracker::overrideMovement(Vector& movement)
 {
+	return; //not a fan of this yet, drift makes it very disorienting...
+
 	QAngle angle;
 	VectorAngles(movement, angle);
 
@@ -289,12 +290,15 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	MatrixAngles(getTrackedTorso(), trackedTorsoAngles);
 	
 	_baseEngineYaw = engineTorsoAngles.y;
-	
-	// Adjust _sixenseToWorld to account for additional yaw ( even if not lined up with base station ) 
+	// _accumulatedYawTorso = ; only used for movement vector adjustments...
 
+	// Adjust _sixenseToWorld to also include translation to zero out current torso offset
 
-	// Adjust _sixenseToWorld to also include translation to zero out current torso value
-	
+	matrix3x4_t trackedTorso = getTrackedTorso();
+	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
+	_vecBaseToTorso;
+	Msg("Torso offset calibrated at \t: %.2f %.2f %2.f", _vecBaseToTorso.x, _vecBaseToTorso.y, _vecBaseToTorso.z); 
+
 	_calibrate = false;
 }
 

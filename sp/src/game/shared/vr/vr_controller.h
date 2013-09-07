@@ -32,13 +32,11 @@ protected:
 	bool _calibrate;
 	
 	IVRIOClient* _vrIO;
-	matrix3x4_t _calibrationMatrix;
-	
-	matrix3x4_t _matRightHand;
-	matrix3x4_t _matLeftHand;
 	matrix3x4_t _sixenseToWorld;
 	matrix3x4_t _eyesToTorsoTracker;
-	
+	matrix3x4_t	_torsoCalibration;
+	Vector	_vecBaseToTorso;
+
 	float	_baseEngineYaw;
 	float	_prevYawTorso;
 	float	_accumulatedYawTorso;

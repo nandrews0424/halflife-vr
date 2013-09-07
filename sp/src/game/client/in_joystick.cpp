@@ -748,12 +748,15 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 		gameAxes[idx].controlType = m_rgAxes[i].ControlMap;
 	}
 	
-	g_MotionTracker()->overrideJoystickInputs(
-		gameAxes[GAME_AXIS_SIDE].value,
-		gameAxes[GAME_AXIS_FORWARD].value,
-		gameAxes[GAME_AXIS_YAW].value,
-		gameAxes[GAME_AXIS_PITCH].value
-	);
+	if ( motionTrackerHasJoystick ) 
+	{
+		g_MotionTracker()->overrideJoystickInputs(
+			gameAxes[GAME_AXIS_SIDE].value,
+			gameAxes[GAME_AXIS_FORWARD].value,
+			gameAxes[GAME_AXIS_YAW].value,
+			gameAxes[GAME_AXIS_PITCH].value
+		);
+	}
 	
 	// Re-map the axis values if necessary, based on the joystick configuration
 	if ( (joy_advanced.GetInt() == 0) && (in_jlook.state & 1) )

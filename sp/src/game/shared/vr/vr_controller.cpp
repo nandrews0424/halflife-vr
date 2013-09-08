@@ -117,7 +117,7 @@ MotionTracker::MotionTracker()
 		Msg("Motion Tracker initialized");
 	}
 	catch (...)
-	{
+	{ 
 		Msg("Motion Tracker not initialized correctly!!!!!");
 	}
 } 

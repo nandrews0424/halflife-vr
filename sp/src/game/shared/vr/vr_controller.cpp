@@ -243,18 +243,8 @@ void MotionTracker::overrideMovement(Vector& movement)
 
 	angle.x = 0;
 	angle.z = 0;
-	
-	if ( writeDebug() )
-	{
-		Msg("Subtracting yaw torso %.2f from angle %.2f\n", _accumulatedYawTorso, angle.y);
-	}
 	angle.y -= _accumulatedYawTorso;
 	
-	if ( writeDebug() )
-	{
-		Msg("New movement angle %.2f\n", angle.y);
-	}	
-
 	AngleVectors(angle, &movement);
 	movement.NormalizeInPlace();
 	movement*=dist;
@@ -302,9 +292,7 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	
 	_baseEngineYaw = engineTorsoAngles.y;
 	_accumulatedYawTorso = 0; // only used for movement vector adjustments...
-
-	// Adjust _sixenseToWorld to also include translation to zero out current torso offset
-
+		
 	matrix3x4_t trackedTorso = getTrackedTorso();
 	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
 	

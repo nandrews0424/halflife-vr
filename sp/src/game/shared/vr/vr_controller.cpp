@@ -101,7 +101,7 @@ MotionTracker::MotionTracker()
 		_vrIO = _vrio_getInProcessClient();
 		_vrIO->initialize();
 
-		_motionTracker = this;
+		_motionTracker = this; 
 
 		if ( _vrIO->getChannelCount() > 0 )
 		{
@@ -237,13 +237,24 @@ void MotionTracker::overrideWeaponMatrix(VMatrix& weaponMatrix)
 
 void MotionTracker::overrideMovement(Vector& movement)
 {
-	return; //not a fan of this yet, drift makes it very disorienting...
-
 	QAngle angle;
 	VectorAngles(movement, angle);
-
 	float dist = movement.Length();
+
+	angle.x = 0;
+	angle.z = 0;
+	
+	if ( writeDebug() )
+	{
+		Msg("Subtracting yaw torso %.2f from angle %.2f\n", _accumulatedYawTorso, angle.y);
+	}
 	angle.y -= _accumulatedYawTorso;
+	
+	if ( writeDebug() )
+	{
+		Msg("New movement angle %.2f\n", angle.y);
+	}	
+
 	AngleVectors(angle, &movement);
 	movement.NormalizeInPlace();
 	movement*=dist;
@@ -290,13 +301,14 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	MatrixAngles(getTrackedTorso(), trackedTorsoAngles);
 	
 	_baseEngineYaw = engineTorsoAngles.y;
-	// _accumulatedYawTorso = ; only used for movement vector adjustments...
+	_accumulatedYawTorso = 0; // only used for movement vector adjustments...
 
 	// Adjust _sixenseToWorld to also include translation to zero out current torso offset
 
 	matrix3x4_t trackedTorso = getTrackedTorso();
 	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
-	_vecBaseToTorso;
+	
+
 	Msg("Torso offset calibrated at \t: %.2f %.2f %2.f", _vecBaseToTorso.x, _vecBaseToTorso.y, _vecBaseToTorso.z); 
 
 	_calibrate = false;

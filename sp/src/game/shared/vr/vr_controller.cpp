@@ -94,7 +94,7 @@ MotionTracker::MotionTracker()
 
 		
 	// todo: fake for now, need to figure out a way to capture this in calibration step...
-	PositionMatrix(Vector(0, 0, -12), _eyesToTorsoTracker);
+	PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
 
 	try 
 	{
@@ -308,8 +308,9 @@ void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, floa
 	Hydra_Message m;
 	_vrIO->hydraData(m);
 
-	ly = m.leftJoyY * 32766;
-	lx = m.leftJoyX * 32766;
+	// NA TODO: for the moment, override only the right stick since we'll be using an xbox 360 controller in the left hand...
+	// ly = m.leftJoyY * 32766;
+	// lx = m.leftJoyX * 32766;
 	ry = m.rightJoyY * 32766;
 	rx = m.rightJoyX * 32766;
 }

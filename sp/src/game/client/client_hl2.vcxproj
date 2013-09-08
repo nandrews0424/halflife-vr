@@ -560,6 +560,7 @@ exit 1
     <ClInclude Include="tempent.h" />
     <ClInclude Include="text_message.h" />
     <ClInclude Include="timedevent.h" />
+    <ClInclude Include="tne_RenderTargets.h" />
     <ClInclude Include="toggletextureproxy.h" />
     <ClInclude Include="vgui_basepanel.h" />
     <ClInclude Include="vgui_bitmapbutton.h" />
@@ -1241,6 +1242,7 @@ exit 1
     <ClCompile Include="text_message.cpp" />
     <ClCompile Include="texturescrollmaterialproxy.cpp" />
     <ClCompile Include="timematerialproxy.cpp" />
+    <ClCompile Include="tne_RenderTargets.cpp" />
     <ClCompile Include="toggletextureproxy.cpp" />
     <ClCompile Include="train.cpp" />
     <ClCompile Include="..\..\game\shared\usercmd.cpp" />

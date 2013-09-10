@@ -86,13 +86,12 @@ MotionTracker::MotionTracker()
 {
 	Msg("Initializing Motion Tracking API");
 	
-	_baseEngineYaw = 0;
+	_fBaseToTorsoYaw = 0;
 	_prevYawTorso = 0;
 	_accumulatedYawTorso = 0;
 	_counter = 0;
 	_calibrate = true;
-
-		
+			
 	// todo: fake for now, need to figure out a way to capture this in calibration step...
 	PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
 
@@ -267,9 +266,11 @@ void MotionTracker::update(VMatrix& torsoMatrix)
 	
 	_accumulatedYawTorso += ( trackedTorsoAngles.y - _prevYawTorso );
 	_prevYawTorso = trackedTorsoAngles.y;
-	_baseEngineYaw = torsoAngle.y;
 	
-	AngleMatrix(QAngle(0, _baseEngineYaw, 0), _sixenseToWorld);
+	if ( writeDebug() )
+		Msg("Updating sixense to world, tracked value %.2f \t calibration %.2f \n", torsoAngle.y, _fBaseToTorsoYaw );
+	
+	AngleMatrix(QAngle(0, torsoAngle.y - _fBaseToTorsoYaw, 0), _sixenseToWorld);
 
 	_counter++;
 }
@@ -290,14 +291,15 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	MatrixToAngles(torsoMatrix, engineTorsoAngles);
 	MatrixAngles(getTrackedTorso(), trackedTorsoAngles);
 	
-	_baseEngineYaw = engineTorsoAngles.y;
-	_accumulatedYawTorso = 0; // only used for movement vector adjustments...
-		
-	matrix3x4_t trackedTorso = getTrackedTorso();
-	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
-	
+	_accumulatedYawTorso = 0;	// only used for movement vector adjustments, completely redundant ...
 
-	Msg("Torso offset calibrated at \t: %.2f %.2f %2.f", _vecBaseToTorso.x, _vecBaseToTorso.y, _vecBaseToTorso.z); 
+	QAngle angles;
+	matrix3x4_t _torsoCalibration = getTrackedTorso();
+	MatrixAngles(_torsoCalibration, angles, _vecBaseToTorso);
+	_fBaseToTorsoYaw = angles.y;
+
+	Msg("Torso offset calibrated at \t: %.2f %.2f %2.f \n", _vecBaseToTorso.x, _vecBaseToTorso.y, _vecBaseToTorso.z); 
+	Msg("Torso angle calibrated at \t: %.2f \n", angles.y); 
 
 	_calibrate = false;
 }

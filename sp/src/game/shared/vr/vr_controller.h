@@ -36,8 +36,8 @@ protected:
 	matrix3x4_t _eyesToTorsoTracker;
 	matrix3x4_t	_torsoCalibration;
 	Vector	_vecBaseToTorso;
+	float	_fBaseToTorsoYaw;
 
-	float	_baseEngineYaw;
 	float	_prevYawTorso;
 	float	_accumulatedYawTorso;
 

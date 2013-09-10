@@ -433,7 +433,7 @@ void CBasePlayer::CacheVehicleView( void )
 		if( UseVR() )
 		{
 			C_BaseAnimating *pVehicleAnimating = dynamic_cast<C_BaseAnimating *>( pVehicle );
-			if( pVehicleAnimating )
+			if( pVehicleAnimating ) 
 			{
 				int eyeAttachmentIndex = pVehicleAnimating->LookupAttachment( "vehicle_driver_eyes" );
 

@@ -2,8 +2,9 @@
 {
 	gamelogo 1
 	game 			"Half-Life VR"
-	title 			"HALF-LIFE"
-	
+	title 			"HALF-LIFE 2"
+	title2			""
+
 	developer		"Nathan Andrews + Wormslayer"
 	developer_url	"http://www.halflife-vr.com/"
 	
@@ -17,8 +18,9 @@
 				
 		SearchPaths
 		{
-			game+mod			ep2/custom/*
+			
 			game+mod			episodic/custom/*
+			game+mod			ep2/custom/*
 			game+mod			hl2/custom/*
 
 			game+mod           							|gameinfo_path|.

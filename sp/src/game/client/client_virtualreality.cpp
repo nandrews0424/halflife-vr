@@ -1149,6 +1149,12 @@ bool CClientVirtualReality::CurrentlyZoomed()
 // --------------------------------------------------------------------
 void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, const QAngle & angles )
 {
+	if ( !m_bOverrideTorsoAngle )
+	{
+		Msg("First time executing OverrideTorsoTransform, executing reset home pos to realign head/torso readings\n");
+		engine->ClientCmd( "vr_reset_home_pos" );
+	}
+
 	if( m_iAlignTorsoAndViewToWeaponCountdown > 0 )
 	{
 		m_iAlignTorsoAndViewToWeaponCountdown--;
@@ -1161,9 +1167,10 @@ void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, con
 		// vector while the torso angle is being overridden.
 		m_OverrideTorsoOffset[ YAW ] = -torsoFromHeadAngles[ YAW ];
 	}
-
+		
 	m_bOverrideTorsoAngle = true;
 	m_OverrideTorsoAngle = angles + m_OverrideTorsoOffset;
+
 
 	// overriding pitch and roll isn't allowed to avoid making people sick
 	m_OverrideTorsoAngle[ PITCH ] = 0;
@@ -1171,7 +1178,11 @@ void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, con
 
 	NormalizeAngles( m_OverrideTorsoAngle );
 	
+	
 	m_PlayerTorsoAngle = m_OverrideTorsoAngle;
+
+	m_PlayerViewAngle.y -= m_OverrideTorsoOffset.y;
+	
 }
 
 

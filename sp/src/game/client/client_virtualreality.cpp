@@ -91,6 +91,8 @@ ConVar vr_ipdtest_right_b ( "vr_ipdtest_right_b", "530", FCVAR_ARCHIVE );
 ConVar vr_ipdtest_right_i ( "vr_ipdtest_right_i", "550", FCVAR_ARCHIVE );
 ConVar vr_ipdtest_right_o ( "vr_ipdtest_right_o", "200", FCVAR_ARCHIVE );
 
+ConVar vr_vehicle_aim_mode( "vr_vehicle_aim_mode", "0", FCVAR_ARCHIVE, "Specifies how to aim vehicle weapon ( tracked weapon = 0, view = 1 )" );
+
 
 
 // --------------------------------------------------------------------
@@ -1147,7 +1149,7 @@ bool CClientVirtualReality::CurrentlyZoomed()
 //			fixed at this point until the game tells us something 
 //			different.
 // --------------------------------------------------------------------
-void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, const QAngle & angles )
+void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, QAngle & angles )
 {
 	if ( !m_bOverrideTorsoAngle )
 	{
@@ -1178,11 +1180,7 @@ void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, con
 
 	NormalizeAngles( m_OverrideTorsoAngle );
 	
-	
 	m_PlayerTorsoAngle = m_OverrideTorsoAngle;
-
-	m_PlayerViewAngle.y -= m_OverrideTorsoOffset.y;
-	
 }
 
 
@@ -1378,7 +1376,7 @@ bool CClientVirtualReality::ProcessCurrentTrackingState( float fGameFOV )
 // Purpose: Returns the projection matrix to use for the HUD
 // --------------------------------------------------------------------
 const VMatrix &CClientVirtualReality::GetHudProjectionFromWorld()
-{
+{ 
 	// This matrix will transform a world-space position into a homogenous HUD-space vector.
 	// So if you divide x+y by w, you will get the position on the HUD in [-1,1] space.
 	return m_HudProjectionFromWorld;
@@ -1390,8 +1388,16 @@ const VMatrix &CClientVirtualReality::GetHudProjectionFromWorld()
 // --------------------------------------------------------------------
 void CClientVirtualReality::GetTorsoRelativeAim( Vector *pPosition, QAngle *pAngles )
 {
-	MatrixAngles( m_TorsoFromMideye.As3x4(), *pAngles, *pPosition );
-	pAngles->y += vr_aim_yaw_offset.GetFloat();
+	if ( vr_vehicle_aim_mode.GetInt() == 0 )
+	{
+		Vector tmp;
+		g_MotionTracker()->updateViewmodelOffset(tmp, *pAngles);
+		pAngles->y -= (m_OverrideTorsoAngle.y - 90);  // account for vehicle orientation changes (-90 is ... weird)
+	}
+	else {
+		MatrixAngles( m_TorsoFromMideye.As3x4(), *pAngles, *pPosition );
+		pAngles->y += vr_aim_yaw_offset.GetFloat();
+	}
 }
 
 

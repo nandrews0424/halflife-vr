@@ -1,6 +1,15 @@
 #include "cbase.h"
 #include "vr/vr_controller.h"
+
+#include <winlite.h>
+
+#include <sixense.h>
 #include <sixense_math.hpp>
+#include <sixense_utils/interfaces.hpp>
+#include <sixense_utils/button_states.hpp>
+#include <sixense_utils/controller_manager/controller_manager.hpp>
+#include <sixense_utils/keyboard_and_mouse_win32.hpp>
+
 
 using sixenseMath::Vector2;
 using sixenseMath::Vector3;
@@ -28,7 +37,7 @@ extern MotionTracker* g_MotionTracker() { 	return _motionTracker; }
 
 
 // A bunch of sixense integration crap that needs to be pulled out along w/ vr.io`
-matrix3x4_t ConvertMatrix( sixenseMath::Matrix4 ss_mat )
+matrix3x4_t sixenseToSourceMatrix( sixenseMath::Matrix4 ss_mat )
 {
 	sixenseMath::Matrix4 tmp_mat( ss_mat );
 
@@ -51,34 +60,19 @@ matrix3x4_t ConvertMatrix( sixenseMath::Matrix4 ss_mat )
 	return retmat;
 }
 
-matrix3x4_t GetLeftMatrix(Hydra_Message m) {
+matrix3x4_t getMatrixFromData(sixenseControllerData m) {
 	sixenseMath::Matrix4 matrix;
 
-	matrix = sixenseMath::Matrix4::rotation( sixenseMath::Quat( m.leftRotationQuat[0], m.leftRotationQuat[1], m.leftRotationQuat[2], m.leftRotationQuat[3] ) );
+	matrix = sixenseMath::Matrix4::rotation( sixenseMath::Quat( m.rot_quat[0], m.rot_quat[1], m.rot_quat[2], m.rot_quat[3] ) );
 	Vector3 ss_left_pos = sixenseMath::Vector3( 
-								MM_TO_INCHES(m.posLeft[0]), 
-								MM_TO_INCHES(m.posLeft[1]), 
-								MM_TO_INCHES(m.posLeft[2])
+								MM_TO_INCHES(m.pos[0]), 
+								MM_TO_INCHES(m.pos[1]), 
+								MM_TO_INCHES(m.pos[2])
 							);
 	
 	matrix.set_col( 3, sixenseMath::Vector4( ss_left_pos, 1.0f ) );
 
-	return ConvertMatrix(matrix);
-}
-
-matrix3x4_t GetRightMatrix(Hydra_Message m) {
-	sixenseMath::Matrix4 matrix;
-
-	matrix = sixenseMath::Matrix4::rotation( sixenseMath::Quat( m.rightRotationQuat[0], m.rightRotationQuat[1], m.rightRotationQuat[2], m.rightRotationQuat[3] ) );
-	
-	Vector3 ss_left_pos = sixenseMath::Vector3( 
-								MM_TO_INCHES(m.posRight[0]), 
-								MM_TO_INCHES(m.posRight[1]), 
-								MM_TO_INCHES(m.posRight[2])
-							);
-	matrix.set_col( 3, sixenseMath::Vector4( ss_left_pos, 1.0f ) );
-
-	return ConvertMatrix(matrix);
+	return sixenseToSourceMatrix(matrix);
 }
 
 
@@ -91,35 +85,14 @@ MotionTracker::MotionTracker()
 	_accumulatedYawTorso = 0;
 	_counter = 0;
 	_calibrate = true;
+	_initialized = false;
 
+	_motionTracker = this;
 		
 	// todo: fake for now, need to figure out a way to capture this in calibration step...
 	PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
-
-	try 
-	{
-		_vrIO = _vrio_getInProcessClient();
-		_vrIO->initialize();
-
-		_motionTracker = this; 
-
-		if ( _vrIO->getChannelCount() > 0 )
-		{
-			Msg("Motion Tracking intialized with %i devices...  \n", _vrIO->getChannelCount());
-		}
-		else 
-		{
-			Msg("Motion Tracking initialized with no devices, not active");
-			return;
-		}
-
-		_initialized = true;
-		Msg("Motion Tracker initialized");
-	}
-	catch (...)
-	{ 
-		Msg("Motion Tracker not initialized correctly!!!!!");
-	}
+	
+	sixenseInitialize();
 } 
 
 MotionTracker::~MotionTracker()
@@ -133,7 +106,7 @@ void MotionTracker::shutDown()
 	{
 		Msg("Shutting down VR Controller");
 		_initialized = false;
-		_vrIO->dispose();
+		sixenseShutdown();
 	}
 	else 
 	{
@@ -152,11 +125,9 @@ void printVec(float* v)
 }
 
 
-
-
 bool MotionTracker::isTrackingWeapon( )
 {
-	return _initialized && _vrIO->hydraConnected();
+	return _initialized;
 }
 
 bool MotionTracker::isTrackingTorso( )
@@ -167,18 +138,22 @@ bool MotionTracker::isTrackingTorso( )
 
 matrix3x4_t MotionTracker::getTrackedTorso()
 {
-	Hydra_Message m;
-	_vrIO->hydraData(m);
-	return GetLeftMatrix(m);
+	int idx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
+	return getMatrixFromData(_sixenseControllerData->controllers[idx]);
+}
+
+matrix3x4_t MotionTracker::getTrackedRightHand()
+{
+	int idx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
+	return getMatrixFromData(_sixenseControllerData->controllers[idx]);
 }
 
 void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 {
+	if ( !_initialized )
+		return;
 
-	Hydra_Message m;
-	_vrIO->hydraData(m);
-
-	matrix3x4_t weaponMatrix	= GetRightMatrix(m);
+	matrix3x4_t weaponMatrix	= getTrackedRightHand();
 	matrix3x4_t torsoMatrix		= getTrackedTorso();
 	
 	QAngle weaponAngle;
@@ -203,6 +178,9 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 
 void MotionTracker::overrideViewOffset(VMatrix& viewMatrix)
 {
+	if ( !_initialized )
+		return;
+
 	matrix3x4_t torsoMatrix = getTrackedTorso();
 	Vector offset;
 	MatrixPosition(torsoMatrix, offset);
@@ -224,6 +202,9 @@ void MotionTracker::overrideViewOffset(VMatrix& viewMatrix)
 
 void MotionTracker::overrideWeaponMatrix(VMatrix& weaponMatrix)
 {
+	if ( !_initialized )
+		return;
+
 	QAngle weaponAngle;
 	MatrixToAngles(weaponMatrix, weaponAngle);
 	Vector weaponOrigin = weaponMatrix.GetTranslation();	
@@ -237,6 +218,9 @@ void MotionTracker::overrideWeaponMatrix(VMatrix& weaponMatrix)
 
 void MotionTracker::overrideMovement(Vector& movement)
 {
+	if ( !_initialized )
+		return;
+	
 	QAngle angle;
 	VectorAngles(movement, angle);
 	float dist = movement.Length();
@@ -253,6 +237,11 @@ void MotionTracker::overrideMovement(Vector& movement)
 // Update uses the inbound torso (view if no rift) angles and uses them update / the base matrix that should be applied to sixense inputs....
 void MotionTracker::update(VMatrix& torsoMatrix)
 {
+	if ( !_initialized )
+		return;
+	
+	sixenseUpdate();
+
 	if ( !isTrackingTorso() )
 		return;
 	
@@ -277,6 +266,9 @@ void MotionTracker::update(VMatrix& torsoMatrix)
 void MotionTracker::beginCalibration() { _calibrate = true; }
 void MotionTracker::calibrate(VMatrix& torsoMatrix)
 {
+	if ( !_initialized )
+		return;
+
 	if ( !isTrackingTorso() ) {
 		
 		Msg("Don't know how to calibrate without a torso reading\n");
@@ -305,14 +297,101 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 
 void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry)
 {
-	Hydra_Message m;
-	_vrIO->hydraData(m);
+	if ( !_initialized )
+		return;
 
+	int idx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
+	sixenseControllerData rhand = _sixenseControllerData->controllers[idx];
+	
 	// NA TODO: for the moment, override only the right stick since we'll be using an xbox 360 controller in the left hand...
 	// ly = m.leftJoyY * 32766;
 	// lx = m.leftJoyX * 32766;
-	ry = m.rightJoyY * 32766;
-	rx = m.rightJoyX * 32766;
+	ry =  rhand.joystick_y * 32766;
+	rx =  rhand.joystick_x * 32766;
+}
+
+
+static void updateSixenseKey( sixenseUtils::IButtonStates* state, char sixenseButton, char key )
+{
+	sixenseUtils::mouseAndKeyboardWin32 keyboard;
+
+	if ( state->buttonJustPressed(sixenseButton) ) 
+	{
+		keyboard.sendKeyState(key, 1, 0);
+	}
+	else if ( state->buttonJustReleased(sixenseButton) )
+	{
+		keyboard.sendKeyState(key, 0, 1);
+	}
+}
+
+
+void MotionTracker::sixenseInitialize()
+{
+	Msg("Initializing Sixense Controllers\n");
+
+	int rc = 0;
+	sixenseInit();
+	
+	if ( rc == SIXENSE_FAILURE )
+		return;
+
+	int trys = 0;
+	int base_found = 0;
+		
+	while (trys < 3 && base_found == 0) {
+		base_found = sixenseIsBaseConnected(0);
+		if ( base_found == 0 ) {
+			Msg("Sixense base not found on try %d\n", trys);
+			trys++;
+			Sleep(1000);
+		}
+	}
+
+	if ( base_found == 0 )
+		return;
+	
+	rc = sixenseSetActiveBase(0);
+	
+
+	_sixenseControllerData = new _sixenseAllControllerData();
+	_leftButtonStates = new sixenseUtils::ButtonStates();
+	_rightButtonStates = new sixenseUtils::ButtonStates();
+	_controllerManager = sixenseUtils::getTheControllerManager();
+
+	_controllerManager->setGameType(sixenseUtils::IControllerManager::ONE_PLAYER_TWO_CONTROLLER);
+
+
+	_initialized = true;
+	Msg("Sixense Initialization Complete\n");
+
+}
+
+void MotionTracker::sixenseShutdown()
+{
+	sixenseExit();
+}
+
+
+void MotionTracker::sixenseUpdate()
+{
+	if ( !_initialized )
+		return;
+
+	sixenseGetAllNewestData(_sixenseControllerData);
+	_controllerManager->update(_sixenseControllerData);	
+	
+	int leftIndex = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
+	int rightIndex = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
+	
+	_leftButtonStates->update( &_sixenseControllerData->controllers[leftIndex] );
+	_rightButtonStates->update( &_sixenseControllerData->controllers[rightIndex] );
+		
+	// 	leftButtons.triggerJustPressed(); // todo: handle triggers....
+
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_START, KEY_LSHIFT );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START, KEY_LSHIFT );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER, KEY_SPACE );
 }
 
 

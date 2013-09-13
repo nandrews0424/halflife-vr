@@ -57,7 +57,7 @@
     <PostBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</PostBuildEventUseInBuild>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;$(SolutionDir)..\..\dependencies\sixense\include</IncludePath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;$(SolutionDir)..\..\dependencies\sixense\include;</IncludePath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)..\..\dependencies\vr_io;$(LibraryPath)</LibraryPath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)..\..\dependencies\sixense\lib\win32\release_dll;$(LibraryPath)</LibraryPath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(SolutionDir)../../dependencies/vr_io/</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -190,7 +190,7 @@ exit 1
     </PreLinkEvent>
     <Link>
       <AdditionalOptions> /DYNAMICBASE /ignore:4221</AdditionalOptions>
-      <AdditionalDependencies>%(AdditionalDependencies);winmm.lib;vr.io.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);winmm.lib;sixense.lib;sixense_utils.lib;</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <OutputFile>$(OutDir)\client.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>

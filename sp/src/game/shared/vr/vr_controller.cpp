@@ -295,33 +295,23 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 }
 
 
-void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry)
+void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry, bool overrideRight, bool overrideLeft)
 {
 	if ( !_initialized )
 		return;
 
-	int idx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
-	sixenseControllerData rhand = _sixenseControllerData->controllers[idx];
-	
-	// NA TODO: for the moment, override only the right stick since we'll be using an xbox 360 controller in the left hand...
-	// ly = m.leftJoyY * 32766;
-	// lx = m.leftJoyX * 32766;
-	ry =  rhand.joystick_y * 32766;
-	rx =  rhand.joystick_x * 32766;
-}
-
-
-static void updateSixenseKey( sixenseUtils::IButtonStates* state, char sixenseButton, char key )
-{
-	sixenseUtils::mouseAndKeyboardWin32 keyboard;
-
-	if ( state->buttonJustPressed(sixenseButton) ) 
-	{
-		keyboard.sendKeyState(key, 1, 0);
+	int rIdx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
+	int lIdx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
+	sixenseControllerData rhand = _sixenseControllerData->controllers[rIdx];
+	sixenseControllerData lhand = _sixenseControllerData->controllers[lIdx];
+		
+	if ( overrideLeft ) {
+		ly = lhand.joystick_y * 32766;
+		lx = lhand.joystick_x * 32766;
 	}
-	else if ( state->buttonJustReleased(sixenseButton) )
-	{
-		keyboard.sendKeyState(key, 0, 1);
+	if ( overrideRight ) {
+		ry =  rhand.joystick_y * 32766;
+		rx =  rhand.joystick_x * 32766;
 	}
 }
 
@@ -353,7 +343,6 @@ void MotionTracker::sixenseInitialize()
 	
 	rc = sixenseSetActiveBase(0);
 	
-
 	_sixenseControllerData = new _sixenseAllControllerData();
 	_leftButtonStates = new sixenseUtils::ButtonStates();
 	_rightButtonStates = new sixenseUtils::ButtonStates();
@@ -373,6 +362,34 @@ void MotionTracker::sixenseShutdown()
 }
 
 
+static void updateSixenseKey( sixenseUtils::IButtonStates* state, char sixenseButton, char key )
+{
+	sixenseUtils::mouseAndKeyboardWin32 keyboard;
+
+	if ( state->buttonJustPressed(sixenseButton) ) 
+	{
+		keyboard.sendKeyState(key, 1, 0);
+	}
+	else if ( state->buttonJustReleased(sixenseButton) )
+	{
+		keyboard.sendKeyState(key, 0, 1);
+	}
+}
+
+static void updateSixenseTrigger( sixenseUtils::IButtonStates* state, char key)
+{
+	sixenseUtils::mouseAndKeyboardWin32 keyboard;
+
+	if ( state->triggerJustPressed() ) 
+	{
+		keyboard.sendKeyState(key, 1, 0);
+	} 
+	else if (state->triggerJustReleased() ) 
+	{
+		keyboard.sendKeyState(key, 0, 1);
+	}
+}
+
 void MotionTracker::sixenseUpdate()
 {
 	if ( !_initialized )
@@ -386,12 +403,27 @@ void MotionTracker::sixenseUpdate()
 	
 	_leftButtonStates->update( &_sixenseControllerData->controllers[leftIndex] );
 	_rightButtonStates->update( &_sixenseControllerData->controllers[rightIndex] );
-		
-	// 	leftButtons.triggerJustPressed(); // todo: handle triggers....
+	
+	// Send key presses for buttons / triggers...
+	// TODO: bumper & joystick press events seem to be getting crossed
+	updateSixenseTrigger( _leftButtonStates, KEY_Z);
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_START,		KEY_ESCAPE );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_1,			KEY_J );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_2,			KEY_K );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_3,			KEY_U );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_4,			KEY_I );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_BUMPER,		KEY_M );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_C );
 
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_START, KEY_LSHIFT );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START, KEY_LSHIFT );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER, KEY_SPACE );
+	updateSixenseTrigger( _rightButtonStates, KEY_X);
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_BACKSLASH );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_L );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_SEMICOLON );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_O );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_P );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER,	KEY_B );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_V);
+
 }
 
 

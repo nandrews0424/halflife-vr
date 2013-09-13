@@ -102,8 +102,7 @@ static ConVar joy_movement_stick_default( "joy_movement_stick_default", "0", FCV
 static ConVar sv_stickysprint_default( "sv_stickysprint_default", "0", FCVAR_NONE );
 
 // motion tracker
-static ConVar mt_input_override( "mt_input_override", "1", FCVAR_ARCHIVE, "Override analog stick inputs from hydra / other integrated devices");
-
+static ConVar mt_input_override( "mt_input_override", "1", FCVAR_ARCHIVE, "Use stick inputs from hydra (0 = off, 1 = right only, 2 = both)");
 
 
 void joy_movement_stick_Callback( IConVar *var, const char *pOldString, float flOldValue )
@@ -683,12 +682,10 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 	}
 
 
-	bool motionTrackerHasJoystick = mt_input_override.GetBool();
-
-
-
+	int motionTrackerJoystickOverride = mt_input_override.GetInt();
+	
 	// Verify that the user wants to use the joystick
-	if ( (!in_joystick.GetInt() || 0 == inputsystem->GetJoystickCount()) && !motionTrackerHasJoystick)
+	if ( (!in_joystick.GetInt() || 0 == inputsystem->GetJoystickCount()) && motionTrackerJoystickOverride == 0)
 		return; 
 
 
@@ -701,7 +698,7 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 	}
 
 	// Verify that a joystick is available
-	if ( !haveJoysticks && !motionTrackerHasJoystick )
+	if ( !haveJoysticks && motionTrackerJoystickOverride == 0 )
 		return; 
 
 	if ( m_flRemainingJoystickSampleTime <= 0 )
@@ -748,13 +745,18 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 		gameAxes[idx].controlType = m_rgAxes[i].ControlMap;
 	}
 	
-	if ( motionTrackerHasJoystick ) 
+	if ( motionTrackerJoystickOverride > 0 ) 
 	{
+		bool right = true; 
+		bool left  = motionTrackerJoystickOverride > 1; // 0 = off, 1 = right only, 2 = both
+
 		g_MotionTracker()->overrideJoystickInputs(
 			gameAxes[GAME_AXIS_SIDE].value,
 			gameAxes[GAME_AXIS_FORWARD].value,
 			gameAxes[GAME_AXIS_YAW].value,
-			gameAxes[GAME_AXIS_PITCH].value
+			gameAxes[GAME_AXIS_PITCH].value,
+			right, 
+			left
 		);
 	}
 	

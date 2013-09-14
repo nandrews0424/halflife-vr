@@ -74,3 +74,6 @@ config.cfg
 # shader files
 *.tmp
 
+sp/game/installer/output
+
+

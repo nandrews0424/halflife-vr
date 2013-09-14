@@ -3172,6 +3172,7 @@ void CViewRender::DrawScope( const CViewSetup &viewSet )
 		return;
  
 	//Copy our current View.
+
 	CViewSetup scopeView(viewSet);
 	
 	if ( g_MotionTracker()->isTrackingWeapon() )
@@ -3179,8 +3180,8 @@ void CViewRender::DrawScope( const CViewSetup &viewSet )
 		// same offsets should apply here as did to the vm but we'll see...
 		g_MotionTracker()->updateViewmodelOffset(scopeView.origin, scopeView.angles);
 	}
-  
-	//Get our camera render target.
+  	
+		//Get our camera render target.
 	ITexture *pRenderTarget = GetScopeTexture();
  
 	if( pRenderTarget == NULL )
@@ -3195,11 +3196,13 @@ void CViewRender::DrawScope( const CViewSetup &viewSet )
 	scopeView.height = pRenderTarget->GetActualHeight();
 	scopeView.x = 0;
 	scopeView.y = 0;
-	scopeView.fov = 90.f; // NA TODO: this being a clone of the main render has it all screwed up, need a new view from the ground up.
+	scopeView.fov = 7.f; 
 	scopeView.m_bOrtho = false;
+	scopeView.m_bViewToProjectionOverride = false; // this was the magic that prevents it from getting all warped and FOV-overriden 
  
 	scopeView.m_flAspectRatio = 1.0f;
-   
+	scopeView.m_eStereoEye = STEREO_EYE_MONO;
+	
 	//Set the view up and output the scene to our RenderTarget (Scope Material).
 	render->Push3DView( scopeView, VIEW_CLEAR_DEPTH | VIEW_CLEAR_COLOR, pRenderTarget, GetFrustum() );
 

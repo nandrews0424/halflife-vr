@@ -62,6 +62,7 @@ protected:
 	void		sixenseInitialize();
 	void		sixenseUpdate();
 	void		sixenseShutdown();
+	sixenseControllerData getControllerData(sixenseUtils::IControllerManager::controller_desc controller);
 };
 
 MotionTracker* g_MotionTracker();

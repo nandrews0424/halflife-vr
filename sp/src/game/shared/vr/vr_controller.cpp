@@ -28,6 +28,7 @@ ConCommand mt_calibrate( "mt_calibrate", mt_calibrate_f, "Shows a message.", 0 )
 static ConVar mt_torso_movement_scale( "mt_torso_movement_scale", "1", FCVAR_ARCHIVE, "Scales positional tracking for torso tracker");
 static ConVar mt_right_hand_movement_scale( "mt_right_hand_movement_scale", "1", FCVAR_ARCHIVE, "Scales positional tracking for right hand");
 static ConVar mt_control_mode( "mt_control_mode", "2", FCVAR_ARCHIVE, "Sets the hydra control mode: 0 = Hydra in each hand, 1 = Right hand and torso, 2 = Right hand and torso with augmented one-handed controls");
+static ConVar mt_swap_hydras( "mt_swap_hydras", "0", 0, "Flip the right & left hydras");
 
 MotionTracker* _motionTracker;
 
@@ -124,7 +125,6 @@ void printVec(float* v)
 	Msg("x:%.2f y:%.2f z:%.2f\n", v[0], v[1], v[2]);
 }
 
-
 bool MotionTracker::isTrackingWeapon( )
 {
 	return _initialized;
@@ -135,17 +135,14 @@ bool MotionTracker::isTrackingTorso( )
 	return true; // todo: check for stem tracker...
 }
 
-
 matrix3x4_t MotionTracker::getTrackedTorso()
-{
-	int idx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
-	return getMatrixFromData(_sixenseControllerData->controllers[idx]);
+{	
+	return getMatrixFromData(getControllerData(sixenseUtils::ControllerManager::P1L));
 }
 
 matrix3x4_t MotionTracker::getTrackedRightHand()
 {
-	int idx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
-	return getMatrixFromData(_sixenseControllerData->controllers[idx]);
+	return getMatrixFromData(getControllerData(sixenseUtils::ControllerManager::P1R));
 }
 
 void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
@@ -311,10 +308,8 @@ void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, floa
 	if ( !_initialized )
 		return;
 
-	int rIdx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
-	int lIdx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
-	sixenseControllerData rhand = _sixenseControllerData->controllers[rIdx];
-	sixenseControllerData lhand = _sixenseControllerData->controllers[lIdx];
+	sixenseControllerData rhand = getControllerData( sixenseUtils::ControllerManager::P1R );
+	sixenseControllerData lhand = getControllerData( sixenseUtils::ControllerManager::P1L );
 	
 	ry =  rhand.joystick_y * 32766;
 	rx =  rhand.joystick_x * 32766;
@@ -421,37 +416,32 @@ void MotionTracker::sixenseUpdate()
 	sixenseGetAllNewestData(_sixenseControllerData);
 	_controllerManager->update(_sixenseControllerData);	
 	
-	int leftIndex = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
-	int rightIndex = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
-	
-	// todo: need to hijack this if it's not set properly....
-	
-	_leftButtonStates->update( &_sixenseControllerData->controllers[leftIndex] );
-	_rightButtonStates->update( &_sixenseControllerData->controllers[rightIndex] );
+	_leftButtonStates->update( &getControllerData(sixenseUtils::ControllerManager::P1L));
+	_rightButtonStates->update( &getControllerData(sixenseUtils::ControllerManager::P1R));
 	
 	// Send key presses for buttons / triggers...
-	// TODO: bumper & joystick press events seem to be getting crossed
-	updateSixenseTrigger( _leftButtonStates, KEY_Z);
+	// TODO: bumper & joystick press events seem to be gettin 
+	updateSixenseTrigger( _leftButtonStates, KEY_LCONTROL);
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_START,		KEY_ESCAPE );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_1,			KEY_J );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_2,			KEY_K );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_3,			KEY_U );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_1,			KEY_Q );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_2,			KEY_F );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_3,			KEY_G );
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_4,			KEY_I );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_C );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_BUMPER,		KEY_M );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_LSHIFT );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_BUMPER,		KEY_SPACE );
 
 	updateSixenseTrigger( _rightButtonStates, KEY_X);
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_BACKSLASH );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_L );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_SEMICOLON );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_O );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_P );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER,	KEY_V);
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_R );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_U );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_E );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_J );
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER,	KEY_Z);
 
 	// right bumper gets hijacked in custom control mode to be a strafe modifier
 	if ( _controlMode != TRACK_RHAND_TORSO_CUSTOM )
 	{
-		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_B );
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_C );
 	}
 	else
 	{
@@ -461,6 +451,23 @@ void MotionTracker::sixenseUpdate()
 		if ( _rightButtonStates->buttonJustReleased(SIXENSE_BUTTON_JOYSTICK) )
 			_strafeModifier = false;
 	}
+}
+
+sixenseControllerData MotionTracker::getControllerData(sixenseUtils::IControllerManager::controller_desc which_controller)
+{
+	int idx = _controllerManager->getIndex( which_controller );
+
+	if ( idx < 0 || idx > 1 )
+	{
+		idx = (int) which_controller;
+	}
+
+	if ( mt_swap_hydras.GetBool() )
+	{
+		idx = (idx+1) % 2;
+	}
+
+	return _sixenseControllerData->controllers[idx];
 }
 
 

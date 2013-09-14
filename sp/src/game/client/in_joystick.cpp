@@ -101,10 +101,6 @@ static ConVar joy_inverty_default( "joy_inverty_default", "0", FCVAR_ARCHIVE_XBO
 static ConVar joy_movement_stick_default( "joy_movement_stick_default", "0", FCVAR_ARCHIVE_XBOX );	// Extracted & saved from profile
 static ConVar sv_stickysprint_default( "sv_stickysprint_default", "0", FCVAR_NONE );
 
-// motion tracker
-static ConVar mt_input_override( "mt_input_override", "1", FCVAR_ARCHIVE, "Use stick inputs from hydra (0 = off, 1 = right only, 2 = both)");
-
-
 void joy_movement_stick_Callback( IConVar *var, const char *pOldString, float flOldValue )
 {
 	engine->ClientCmd( "joyadvancedupdate" );
@@ -682,7 +678,7 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 	}
 
 
-	int motionTrackerJoystickOverride = mt_input_override.GetInt();
+	int motionTrackerJoystickOverride = 1;  // always hand off to the motion tracker
 	
 	// Verify that the user wants to use the joystick
 	if ( (!in_joystick.GetInt() || 0 == inputsystem->GetJoystickCount()) && motionTrackerJoystickOverride == 0)
@@ -747,16 +743,11 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 	
 	if ( motionTrackerJoystickOverride > 0 ) 
 	{
-		bool right = true; 
-		bool left  = motionTrackerJoystickOverride > 1; // 0 = off, 1 = right only, 2 = both
-
 		g_MotionTracker()->overrideJoystickInputs(
 			gameAxes[GAME_AXIS_SIDE].value,
 			gameAxes[GAME_AXIS_FORWARD].value,
 			gameAxes[GAME_AXIS_YAW].value,
-			gameAxes[GAME_AXIS_PITCH].value,
-			right, 
-			left
+			gameAxes[GAME_AXIS_PITCH].value
 		);
 	}
 	

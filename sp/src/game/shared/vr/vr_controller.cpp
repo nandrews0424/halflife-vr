@@ -23,11 +23,11 @@ void mt_calibrate_f( void )
     Msg("Beginning Motion Tracker Calibration.... \n");
 	g_MotionTracker()->beginCalibration();
 }
- 
 ConCommand mt_calibrate( "mt_calibrate", mt_calibrate_f, "Shows a message.", 0 );
 
 static ConVar mt_torso_movement_scale( "mt_torso_movement_scale", "1", FCVAR_ARCHIVE, "Scales positional tracking for torso tracker");
 static ConVar mt_right_hand_movement_scale( "mt_right_hand_movement_scale", "1", FCVAR_ARCHIVE, "Scales positional tracking for right hand");
+static ConVar mt_control_mode( "mt_control_mode", "2", FCVAR_ARCHIVE, "Sets the hydra control mode: 0 = Hydra in each hand, 1 = Right hand and torso, 2 = Right hand and torso with augmented one-handed controls");
 
 MotionTracker* _motionTracker;
 
@@ -86,13 +86,13 @@ MotionTracker::MotionTracker()
 	_counter = 0;
 	_calibrate = true;
 	_initialized = false;
+	_strafeModifier = false;
 
 	_motionTracker = this;
-		
-	// todo: fake for now, need to figure out a way to capture this in calibration step...
-	PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
 	
 	sixenseInitialize();
+
+	_controlMode = (MotionControlMode_t) mt_control_mode.GetInt();
 } 
 
 MotionTracker::~MotionTracker()
@@ -160,8 +160,7 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 	Vector weaponPos;
 
 	// get raw torso and weap positions, construct the distance from the diff of those two + the distance to the eyes from a properly calibrated torso tracker...
-	Vector vTorso, vWeapon, vEyes;
-	MatrixPosition(torsoMatrix, vTorso);
+	Vector vWeapon, vEyes;
 	MatrixPosition(weaponMatrix, vWeapon);
 	MatrixPosition(_eyesToTorsoTracker, vEyes);
 	
@@ -178,7 +177,7 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 
 void MotionTracker::overrideViewOffset(VMatrix& viewMatrix)
 {
-	if ( !_initialized )
+	if ( !_initialized || _controlMode == TRACK_BOTH_HANDS  )
 		return;
 
 	matrix3x4_t torsoMatrix = getTrackedTorso();
@@ -218,7 +217,7 @@ void MotionTracker::overrideWeaponMatrix(VMatrix& weaponMatrix)
 
 void MotionTracker::overrideMovement(Vector& movement)
 {
-	if ( !_initialized )
+	if ( !_initialized || _controlMode == TRACK_BOTH_HANDS  )
 		return;
 	
 	QAngle angle;
@@ -241,6 +240,9 @@ void MotionTracker::update(VMatrix& torsoMatrix)
 		return;
 	
 	sixenseUpdate();
+
+	if ( (_counter % 20) == 0 ) // no need to do this every frame
+		_controlMode = (MotionControlMode_t) mt_control_mode.GetInt();
 
 	if ( !isTrackingTorso() )
 		return;
@@ -277,25 +279,34 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 
 	Msg("Calibrating Motion Trackers...\n");
 
-	// Adjust _sixenseToWorld per current torso/view angles
-	QAngle trackedTorsoAngles, engineTorsoAngles; 
-	MatrixToAngles(torsoMatrix, engineTorsoAngles);
-	MatrixAngles(getTrackedTorso(), trackedTorsoAngles);
 	
+	QAngle engineTorsoAngles; 
+	MatrixToAngles(torsoMatrix, engineTorsoAngles);
 	_baseEngineYaw = engineTorsoAngles.y;
 	_accumulatedYawTorso = 0; // only used for movement vector adjustments...
-		
+
+	// regardless of control mode, we snapshot the torso (lhand) tracker offset, the only change is how it's applied in the viewmodel offsets...
 	matrix3x4_t trackedTorso = getTrackedTorso();
 	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
-	
 
+	if ( _controlMode == TRACK_BOTH_HANDS )
+	{
+		// assume the calibrated position is left hand right in front of eyes for now...
+		PositionMatrix(Vector(2, 0, 0), _eyesToTorsoTracker);
+	} 
+	else
+	{
+		// chest tracker offset is fixed for now but could easily be configured...
+		PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
+	}
+	
 	Msg("Torso offset calibrated at \t: %.2f %.2f %2.f", _vecBaseToTorso.x, _vecBaseToTorso.y, _vecBaseToTorso.z); 
 
 	_calibrate = false;
 }
 
 
-void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry, bool overrideRight, bool overrideLeft)
+void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry)
 {
 	if ( !_initialized )
 		return;
@@ -304,14 +315,26 @@ void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, floa
 	int lIdx = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
 	sixenseControllerData rhand = _sixenseControllerData->controllers[rIdx];
 	sixenseControllerData lhand = _sixenseControllerData->controllers[lIdx];
-		
-	if ( overrideLeft ) {
-		ly = lhand.joystick_y * 32766;
-		lx = lhand.joystick_x * 32766;
+	
+	ry =  rhand.joystick_y * 32766;
+	rx =  rhand.joystick_x * 32766;
+	
+	if ( _controlMode == TRACK_BOTH_HANDS )
+	{
+		ly =  lhand.joystick_y * 32766;
+		lx =  lhand.joystick_x * 32766;
 	}
-	if ( overrideRight ) {
-		ry =  rhand.joystick_y * 32766;
-		rx =  rhand.joystick_x * 32766;
+	
+	// experimental mode where we override left y input with measurements from right hydra...
+	if ( _controlMode == TRACK_RHAND_TORSO_CUSTOM )
+	{
+		ly =  rhand.joystick_y * 32766;
+
+		if ( _strafeModifier ) 
+		{
+			lx =  rhand.joystick_x * 32766;
+			rx = 0;
+		}
 	}
 }
 
@@ -401,6 +424,8 @@ void MotionTracker::sixenseUpdate()
 	int leftIndex = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1L );
 	int rightIndex = _controllerManager->getIndex( sixenseUtils::ControllerManager::P1R );
 	
+	// todo: need to hijack this if it's not set properly....
+	
 	_leftButtonStates->update( &_sixenseControllerData->controllers[leftIndex] );
 	_rightButtonStates->update( &_sixenseControllerData->controllers[rightIndex] );
 	
@@ -412,8 +437,8 @@ void MotionTracker::sixenseUpdate()
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_2,			KEY_K );
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_3,			KEY_U );
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_4,			KEY_I );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_BUMPER,		KEY_M );
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_C );
+	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_BUMPER,		KEY_M );
 
 	updateSixenseTrigger( _rightButtonStates, KEY_X);
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_BACKSLASH );
@@ -421,9 +446,21 @@ void MotionTracker::sixenseUpdate()
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_SEMICOLON );
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_O );
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_P );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER,	KEY_B );
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_V);
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER,	KEY_V);
 
+	// right bumper gets hijacked in custom control mode to be a strafe modifier
+	if ( _controlMode != TRACK_RHAND_TORSO_CUSTOM )
+	{
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_B );
+	}
+	else
+	{
+		if ( _rightButtonStates->buttonJustPressed(SIXENSE_BUTTON_JOYSTICK) )
+			_strafeModifier = true;
+		
+		if ( _rightButtonStates->buttonJustReleased(SIXENSE_BUTTON_JOYSTICK) )
+			_strafeModifier = false;
+	}
 }
 
 

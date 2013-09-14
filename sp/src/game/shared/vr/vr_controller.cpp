@@ -316,14 +316,14 @@ void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, floa
 	
 	if ( _controlMode == TRACK_BOTH_HANDS )
 	{
-		ly =  lhand.joystick_y * 32766;
+		ly = -lhand.joystick_y * 32766;
 		lx =  lhand.joystick_x * 32766;
 	}
 	
 	// experimental mode where we override left y input with measurements from right hydra...
 	if ( _controlMode == TRACK_RHAND_TORSO_CUSTOM )
 	{
-		ly =  rhand.joystick_y * 32766;
+		ly =  -rhand.joystick_y * 32766;
 
 		if ( _strafeModifier ) 
 		{

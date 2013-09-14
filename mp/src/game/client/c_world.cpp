@@ -99,7 +99,7 @@ void C_World::OnDataChanged( DataUpdateType_t updateType )
 	{
 		modemanager->SwitchMode( false, true );
 
-		if ( m_bStartDark )
+		if ( true )
 		{
 			ScreenFade_t sf;
 			memset( &sf, 0, sizeof( sf ) );

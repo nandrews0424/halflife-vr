@@ -103,7 +103,7 @@ MotionTracker::MotionTracker()
 
 	sixenseInitialize();
 
-	PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
+	PositionMatrix(Vector(2, 0, -12), _eyesToTorsoTracker);
 
 
 	_controlMode = (MotionControlMode_t) mt_control_mode.GetInt();
@@ -488,8 +488,8 @@ void MotionTracker::sixenseUpdate()
 
 		if ( menuControlMode == RIGHT_JOYSTICK || menuControlMode == BOTH )
 		{
-			mouseMove.y -= rightController.joystick_x * 10;
-			mouseMove.z += rightController.joystick_y * 10;
+			mouseMove.y -= rightController.joystick_x * 6.5;
+			mouseMove.z += rightController.joystick_y * 6.5;
 		}
 		
 		mouseKeyboard.sendRelativeMouseMove(-mouseMove.y, mouseMove.z);

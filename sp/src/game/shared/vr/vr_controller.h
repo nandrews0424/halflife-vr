@@ -52,9 +52,15 @@ protected:
 	void		calibrate(VMatrix& torsoMatrix);
 	bool		writeDebug();
 	
+
+	// sixense related hooks
 	bool		_sixenseInitialized;
 	MotionControlMode_t _controlMode;
 	bool		_strafeModifier;
+	bool		_rightBumperPressed;
+	Vector		_previousHandPosition;
+	QAngle		_previousHandAngle; // for mouse emulation
+
 	struct		_sixenseAllControllerData *_sixenseControllerData;
 	class		sixenseUtils::IButtonStates *_leftButtonStates, *_rightButtonStates;
 	class		sixenseUtils::IControllerManager *_controllerManager;

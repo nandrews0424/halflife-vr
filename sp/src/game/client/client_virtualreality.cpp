@@ -845,14 +845,9 @@ bool CClientVirtualReality::OverridePlayerMotion( float flInputSampleFrametime, 
 
 			g_MotionTracker()->overrideWeaponMatrix(m_WorldFromWeapon);
 
-
-			// VR TODO - does updating m_PlayerTorsoAngle screw up everything?
-
-
-
 			// ...and we return this new weapon direction as the player's orientation.
 			MatrixAngles( m_WorldFromWeapon.As3x4(), *pNewAngles );
-
+			
 			// Restore the translation.
 			m_WorldFromWeapon.SetTranslation ( vWeaponOrigin );
 		}
@@ -994,10 +989,31 @@ bool CClientVirtualReality::OverridePlayerMotion( float flInputSampleFrametime, 
 	case HMM_SHOOTFACE_MOVETORSO:
 		{
 			// The motion passed in is meant to be relative to the torso, so jimmy it to be relative to the new weapon aim.
-			VMatrix torsoFromWorld = worldFromTorso.InverseTR();
-			VMatrix newTorsoFromWeapon = torsoFromWorld * m_WorldFromWeapon;
+
+
+			QAngle torsoAngle, viewAngle;
+			MatrixAngles(worldFromTorso.As3x4(), torsoAngle); 
+			MatrixAngles(m_WorldFromMidEye.As3x4(), viewAngle);
+			torsoAngle.x = viewAngle.x;
+			torsoAngle.z = 0;
+
+			VMatrix newWorldFromTorso;
+			AngleMatrix(torsoAngle, newWorldFromTorso.As3x4());
+
+
+			QAngle weaponAngle;
+			VMatrix newWorldFromWeapon;
+			MatrixAngles(m_WorldFromWeapon.As3x4(), weaponAngle);
+			weaponAngle.x = 0;
+			weaponAngle.z = 0;
+			AngleMatrix(weaponAngle, newWorldFromWeapon.As3x4());
+
+			VMatrix torsoFromWorld = newWorldFromTorso.InverseTR();
+			VMatrix newTorsoFromWeapon = torsoFromWorld * newWorldFromWeapon;
 			newTorsoFromWeapon.SetTranslation ( Vector ( 0.0f, 0.0f, 0.0f ) );
+			
 			*pNewMotion = newTorsoFromWeapon * curMotion;
+
 		}
 		break;
 	case HMM_SHOOTBOUNDEDMOUSE_LOOKFACE_MOVEMOUSE:

@@ -36,6 +36,7 @@ static ConVar mt_torso_movement_scale( "mt_torso_movement_scale", "1", FCVAR_ARC
 static ConVar mt_right_hand_movement_scale( "mt_right_hand_movement_scale", "1", FCVAR_ARCHIVE, "Scales positional tracking for right hand");
 static ConVar mt_control_mode( "mt_control_mode", "2", FCVAR_ARCHIVE, "Sets the hydra control mode: 0 = Hydra in each hand, 1 = Right hand and torso, 2 = Right hand and torso with augmented one-handed controls");
 static ConVar mt_swap_hydras( "mt_swap_hydras", "0", 0, "Flip the right & left hydras");
+static ConVar mt_menu_control_mode( "mt_menu_control_mode", "0", FCVAR_ARCHIVE, "Control the mouse in menu with 0 = Right joystick, 1 = Right hand position, 2 = Both");
 
 MotionTracker* _motionTracker;
 
@@ -425,8 +426,11 @@ void MotionTracker::sixenseUpdate()
 	sixenseGetAllNewestData(_sixenseControllerData);
 	_controllerManager->update(_sixenseControllerData);	
 	
-	_leftButtonStates->update( &getControllerData(sixenseUtils::ControllerManager::P1L));
-	_rightButtonStates->update( &getControllerData(sixenseUtils::ControllerManager::P1R));
+	sixenseControllerData leftController = getControllerData(sixenseUtils::ControllerManager::P1L);
+	sixenseControllerData rightController = getControllerData(sixenseUtils::ControllerManager::P1R);
+
+	_leftButtonStates->update( &leftController );
+	_rightButtonStates->update( &rightController );
 	
 	// Send key presses for buttons / triggers...
 	updateSixenseTrigger( _leftButtonStates, KEY_LCONTROL);
@@ -471,25 +475,34 @@ void MotionTracker::sixenseUpdate()
 
 
 	// MOUSE CONTROL WHEN IN GUI
-
 	matrix3x4_t hand = getTrackedRightHand();
 	Vector handPos;
-	// QAngle handAngle;  (TODO: add ability to control by angle...)
-	// MatrixAngles(hand, handAngle, handPos);
 	MatrixPosition(hand, handPos);
-	if( !_rightBumperPressed && (( enginevgui && enginevgui->IsGameUIVisible() ) || vgui::surface()->IsCursorVisible() ))
-	{
-		Vector mouseMoveFromAngle, mouseMoveFromPosition, mouseMove;
-		// AngleVectors(handAngle - _previousHandAngle, &mouseMoveFromAngle);
-		mouseMoveFromAngle = Vector(0,0,0); //mouseMove.Normalized() * 300; 
-		mouseMoveFromPosition = (handPos - _previousHandPosition) * 140;
-		mouseMove = mouseMoveFromAngle + mouseMoveFromPosition;
+
+	if (( enginevgui && enginevgui->IsGameUIVisible() ) || vgui::surface()->IsCursorVisible() ) {
+	
+		int menuControlMode = mt_menu_control_mode.GetInt();
+		Vector mouseMove(0,0,0);
+
+		if (( menuControlMode == RIGHT_HAND_POS || menuControlMode == BOTH ) && !_rightBumperPressed )
+		{
+			mouseMove += (handPos - _previousHandPosition) * 130;
+		}
+
+		if ( menuControlMode == RIGHT_JOYSTICK || menuControlMode == BOTH )
+		{
+			mouseMove.y -= rightController.joystick_x * 10;
+			mouseMove.z += rightController.joystick_y * 10;
+		}
+		
 		mouseKeyboard.sendRelativeMouseMove(-mouseMove.y, mouseMove.z);
 	}
 
-	// VectorCopy(handAngle, _previousHandAngle);
 	VectorCopy(handPos, _previousHandPosition);
 	
+
+
+
 
 	/* 
 		CUSTOM CONTROL MODE TWEAKS

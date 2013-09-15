@@ -9,6 +9,13 @@ enum MotionControlMode_t
 	TRACK_RHAND_TORSO_CUSTOM = 2 // alternate control schemes for right hand 
 };
 
+enum MenuControlMode_t
+{
+	RIGHT_JOYSTICK = 0, 
+	RIGHT_HAND_POS = 1,
+	BOTH = 2 
+};
+
 class MotionTracker
 {
  

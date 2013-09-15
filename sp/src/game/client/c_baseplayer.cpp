@@ -2363,7 +2363,7 @@ float C_BasePlayer::GetFOV( void )
 	if ( pVehicle )
 	{
 		CacheVehicleView();
-		flDefaultFOV = ( m_flVehicleViewFOV == 0 ) ? GetDefaultFOV() : m_flVehicleViewFOV;
+		flDefaultFOV = GetDefaultFOV();
 	}
 	else
 	{

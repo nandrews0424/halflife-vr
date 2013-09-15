@@ -1568,6 +1568,8 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	CBaseEntity	*pLandmark;
 	levellist_t	levels[16];
 
+	bool isDelayedChangeLevel = m_inDelayedTrigger && gpGlobals->curtime > m_delayUntil;
+
 	Assert(!FStrEq(m_szMapName, ""));
 
 	// Don't work in deathmatch
@@ -1583,7 +1585,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	CBaseEntity *pPlayer = (pActivator && pActivator->IsPlayer()) ? pActivator : UTIL_GetLocalPlayer();
 
 	int transitionState = InTransitionVolume(pPlayer, m_szLandmarkName);
-	if ( transitionState == TRANSITION_VOLUME_SCREENED_OUT )
+	if ( transitionState == TRANSITION_VOLUME_SCREENED_OUT && !isDelayedChangeLevel)
 	{
 		DevMsg( 2, "Player isn't in the transition volume %s, aborting\n", m_szLandmarkName );
 		return;
@@ -1592,7 +1594,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	// look for a landmark entity		
 	pLandmark = FindLandmark( m_szLandmarkName );
 
-	if ( !pLandmark )
+	if ( !pLandmark && !isDelayedChangeLevel)
 		return;
 
 	// no transition volumes, check PVS of landmark
@@ -1608,7 +1610,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 			bool playerInPVS = engine->CheckBoxInPVS( vecSurroundMins, vecSurroundMaxs, pvs, sizeof( pvs ) );
 
 			//Assert( playerInPVS );
-			if ( !playerInPVS )
+			if ( !playerInPVS && !isDelayedChangeLevel)
 			{
 				Warning( "Player isn't in the landmark's (%s) PVS, aborting\n", m_szLandmarkName );
 #ifndef HL1_DLL
@@ -1679,6 +1681,7 @@ void CChangeLevel::TouchChangeLevel( CBaseEntity *pOther )
 		pPlayer->SetAbsVelocity( vecVelocity );
 		pPlayer->AddFlag( FL_FROZEN );
 		return;
+		
 	}
 
 	if ( !pPlayer->IsInAVehicle() && pPlayer->GetMoveType() == MOVETYPE_NOCLIP )
@@ -1690,14 +1693,22 @@ void CChangeLevel::TouchChangeLevel( CBaseEntity *pOther )
 
 	if ( !m_inDelayedTrigger )
 	{
-		m_inDelayedTrigger = true;
-		m_delayUntil = gpGlobals->curtime + 3.f;
-		engine->ClientCommand(pPlayer->edict(), "fadeout 2");
-		SetNextThink( m_delayUntil + .2f );
+		if ( !pPlayer->IsInAVehicle() ) 
+		{
+			
+			m_inDelayedTrigger = true;
+			m_delayUntil = gpGlobals->curtime + 3.f;
+			engine->ClientCommand(pPlayer->edict(), "fadeout 2");
+			SetNextThink( m_delayUntil + .2f );
+		}
+		else 
+		{
+			m_inDelayedTrigger = true;
+			m_delayUntil = gpGlobals->curtime + .7f;
+			engine->ClientCommand(pPlayer->edict(), "fadeout .1");
+			SetNextThink( m_delayUntil + .05f );
+		}
 	}
-
-	// no longer actually changing the level right now...
-	// ChangeLevelNow( pOther );
 }
 
 

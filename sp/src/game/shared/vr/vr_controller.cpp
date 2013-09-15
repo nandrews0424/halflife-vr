@@ -103,6 +103,9 @@ MotionTracker::MotionTracker()
 
 	sixenseInitialize();
 
+	PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
+
+
 	_controlMode = (MotionControlMode_t) mt_control_mode.GetInt();
 } 
 
@@ -296,16 +299,10 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	matrix3x4_t trackedTorso = getTrackedTorso();
 	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
 
-	if ( _controlMode == TRACK_BOTH_HANDS )
-	{
-		// assume the calibrated position is left hand right in front of eyes for now...
-		PositionMatrix(Vector(2, 0, 0), _eyesToTorsoTracker);
-	} 
-	else
-	{
-		// chest tracker offset is fixed for now but could easily be configured...
-		PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
-	}
+	// TODO: chest tracker offset is fixed for now but could easily be configured to treat right hand as eyes assuming within a threshold and recalibrate this value...
+	// would have to be optional because it's rather annoying to do just to realign
+	// PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
+	
 	
 	Msg("Torso offset calibrated at \t: %.2f %.2f %2.f", _vecBaseToTorso.x, _vecBaseToTorso.y, _vecBaseToTorso.z); 
 

@@ -103,7 +103,7 @@ MotionTracker::MotionTracker()
 
 	sixenseInitialize();
 
-	PositionMatrix(Vector(2, 0, -12), _eyesToTorsoTracker);
+	PositionMatrix(Vector(-1, 0, -11.5), _eyesToTorsoTracker);
 
 
 	_controlMode = (MotionControlMode_t) mt_control_mode.GetInt();

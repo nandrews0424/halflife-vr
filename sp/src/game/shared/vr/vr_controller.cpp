@@ -380,7 +380,7 @@ void MotionTracker::sixenseShutdown()
 }
 
 
-static void updateSixenseKey( sixenseUtils::IButtonStates* state, char sixenseButton, char key )
+static void updateSixenseKey( sixenseUtils::IButtonStates* state, unsigned short sixenseButton, char key )
 {
 	sixenseUtils::mouseAndKeyboardWin32 keyboard;
 
@@ -420,7 +420,6 @@ void MotionTracker::sixenseUpdate()
 	_rightButtonStates->update( &getControllerData(sixenseUtils::ControllerManager::P1R));
 	
 	// Send key presses for buttons / triggers...
-	// TODO: bumper & joystick press events seem to be gettin 
 	updateSixenseTrigger( _leftButtonStates, KEY_LCONTROL);
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_START,		KEY_ESCAPE );
 	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_1,			KEY_Q );

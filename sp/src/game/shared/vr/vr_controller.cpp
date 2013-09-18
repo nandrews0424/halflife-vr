@@ -95,6 +95,7 @@ MotionTracker::MotionTracker()
 	_counter = 0;
 	_calibrate = true;
 	_initialized = false;
+	_isGuiActive = false;
 	_strafeModifier = false;
 	_rightBumperPressed = false;
 	_motionTracker = this;
@@ -327,12 +328,15 @@ void MotionTracker::overrideJoystickInputs(float& lx, float& ly, float& rx, floa
 		lx =  lhand.joystick_x * 32766;
 	}
 	
-	// experimental mode where we override left y input with measurements from right hydra...
+	// CUSTOM ONE HYDRA MODE
 	if ( _controlMode == TRACK_RHAND_TORSO_CUSTOM )
 	{
-		ly =  -rhand.joystick_y * 32766;
 
-		if ( _strafeModifier ) 
+		// Right hand up/down always moves forward/backward
+		ly =  -rhand.joystick_y * 32766; 
+
+		// If not shifted we do strafe rather than turn
+		if ( !_rightBumperPressed ) 
 		{
 			lx =  rhand.joystick_x * 32766;
 			rx = 0;
@@ -415,6 +419,21 @@ static void updateSixenseTrigger( sixenseUtils::IButtonStates* state, char key)
 	}
 }
 
+static void updateSixenseTrigger( sixenseUtils::IButtonStates* state) // for mouse click
+{
+	sixenseUtils::mouseAndKeyboardWin32 keyboard;
+
+	if ( state->triggerJustPressed() ) 
+	{
+		keyboard.sendMouseClick(1,0);
+	} 
+	else if (state->triggerJustReleased() ) 
+	{
+		keyboard.sendMouseClick(0,1);
+	}
+}
+
+
 void MotionTracker::sixenseUpdate()
 {
 	if ( !_initialized )
@@ -429,55 +448,87 @@ void MotionTracker::sixenseUpdate()
 	_leftButtonStates->update( &leftController );
 	_rightButtonStates->update( &rightController );
 	
-	// Send key presses for buttons / triggers...
-	updateSixenseTrigger( _leftButtonStates, KEY_LCONTROL);
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_START,		KEY_ESCAPE );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_1,			KEY_Q );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_2,			KEY_F );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_3,			KEY_G );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_4,			KEY_I );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_LSHIFT );
-	updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_BUMPER,		KEY_SPACE );
+	if ( _controlMode == TRACK_RHAND_TORSO_CUSTOM )
+		sixenseMapKeysCustom();
+	else
+		sixenseMapKeys();
+	
+	sixenseGuiMouseControl();	
+}
 
-	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_BACKSLASH );
+
+void MotionTracker::sixenseMapKeys()
+{
+	if ( _controlMode == TRACK_BOTH_HANDS ) 
+	{
+		// ONLY BIND LEFT STICK IF IT'S BEING HELD, SHOULD HELP WITH ACCIDENTAL PRESSES
+		updateSixenseTrigger( _leftButtonStates, KEY_LCONTROL);
+		updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_START,		KEY_ESCAPE );
+		updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_1,			KEY_Q );
+		updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_2,			KEY_F );
+		updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_3,			KEY_G );
+		updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_4,			KEY_I );
+		updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_LSHIFT );
+		updateSixenseKey( _leftButtonStates, SIXENSE_BUTTON_BUMPER,		KEY_SPACE );
+	}
+
+	updateSixenseTrigger( _rightButtonStates);
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_P );
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_R );
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_U );
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_E );
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_J );
 	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_BUMPER,	KEY_Z);
-	
-	// map right trigger to click
-	sixenseUtils::mouseAndKeyboardWin32 mouseKeyboard;
-	if ( _rightButtonStates->triggerJustPressed() ) 
-	{
-		mouseKeyboard.sendMouseClick(1,0);
-	} 
-	else if (_rightButtonStates->triggerJustReleased() ) 
-	{
-		mouseKeyboard.sendMouseClick(0,1);
-	}
+	updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_C );
+}
 
-	// right bumper is custom because we use the value several places below (ratcheting, alternate buttons, etc)...
-	bool ;
+
+void MotionTracker::sixenseMapKeysCustom()
+{
+
+	// right bumper used for shift state
 	if ( _rightButtonStates->buttonJustPressed(SIXENSE_BUTTON_BUMPER) ) 
-	{
 		_rightBumperPressed = true;
-		mouseKeyboard.sendKeyState(KEY_Z, 1, 0);
-	}
 	else if ( _rightButtonStates->buttonJustReleased(SIXENSE_BUTTON_BUMPER) )
-	{
 		_rightBumperPressed = false;
-		mouseKeyboard.sendKeyState(KEY_Z, 0, 1);
+	
+	// normal mode
+	if ( !_rightBumperPressed )
+	{
+		updateSixenseTrigger( _rightButtonStates); // fire
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_P ); 		// calibrate
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_LSHIFT ); 	// sprint
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_E ); 		// use
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_LCONTROL );	// duck
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_J );		// weapon cycle
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_SPACE );	// jump
 	}
+	else 
+	{
+		updateSixenseTrigger( _rightButtonStates, KEY_Z); // secondary fire
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_P ); 		// still calibrate
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_R ); 		// reload
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_U ); 		// weapon cycle up 
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_E );		// still use?
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_J );		// weapon cycle down
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_F ); 		// flashlight
+	}
+}
 
 
-	// MOUSE CONTROL WHEN IN GUI
+void MotionTracker::sixenseGuiMouseControl()
+{
+
 	matrix3x4_t hand = getTrackedRightHand();
 	Vector handPos;
 	MatrixPosition(hand, handPos);
 
 	if (( enginevgui && enginevgui->IsGameUIVisible() ) || vgui::surface()->IsCursorVisible() ) {
 	
+		// center mouse if first frame in gui
+		if ( !_isGuiActive ) 
+			mouseKeyboard.sendAbsoluteMouseMove(ScreenWidth()/2.f, ScreenHeight()/2.f);
+		
 		int menuControlMode = mt_menu_control_mode.GetInt();
 		Vector mouseMove(0,0,0);
 
@@ -493,37 +544,16 @@ void MotionTracker::sixenseUpdate()
 		}
 		
 		mouseKeyboard.sendRelativeMouseMove(-mouseMove.y, mouseMove.z);
+		_isGuiActive = true;
+	} 
+	else
+	{
+		_isGuiActive = false;
 	}
 
 	VectorCopy(handPos, _previousHandPosition);
-	
-
-
-
-
-	/* 
-		CUSTOM CONTROL MODE TWEAKS
-	*/
-	if ( _controlMode != TRACK_RHAND_TORSO_CUSTOM )
-	{
-		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_C );
-	}
-	else
-	{
-		if ( _rightButtonStates->buttonJustPressed(SIXENSE_BUTTON_JOYSTICK) )
-			_strafeModifier = true;
-		
-		if ( _rightButtonStates->buttonJustReleased(SIXENSE_BUTTON_JOYSTICK) )
-			_strafeModifier = false;
-	}
-
-
-
-
-
-
-
 }
+
 
 sixenseControllerData MotionTracker::getControllerData(sixenseUtils::IControllerManager::controller_desc which_controller)
 {

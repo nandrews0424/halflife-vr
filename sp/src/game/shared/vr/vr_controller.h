@@ -67,6 +67,7 @@ protected:
 	bool		_rightBumperPressed;
 	Vector		_previousHandPosition;
 	QAngle		_previousHandAngle; // for mouse emulation
+	bool		_isGuiActive;
 
 	struct		_sixenseAllControllerData *_sixenseControllerData;
 	class		sixenseUtils::IButtonStates *_leftButtonStates, *_rightButtonStates;
@@ -75,6 +76,9 @@ protected:
 	void		sixenseInitialize();
 	void		sixenseUpdate();
 	void		sixenseShutdown();
+	void		sixenseGuiMouseControl();
+	void		sixenseMapKeys();
+	void		sixenseMapKeysCustom();
 	sixenseControllerData getControllerData(sixenseUtils::IControllerManager::controller_desc controller);
 };
 

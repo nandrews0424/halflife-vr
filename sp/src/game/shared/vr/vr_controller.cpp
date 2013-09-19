@@ -497,9 +497,9 @@ void MotionTracker::sixenseMapKeysCustom()
 	{
 		updateSixenseTrigger( _rightButtonStates); // fire
 		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_START,		KEY_P ); 		// calibrate
-		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_LSHIFT ); 	// sprint
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_1,			KEY_LCONTROL ); 	// sprint
 		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_2,			KEY_E ); 		// use
-		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_LCONTROL );	// duck
+		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_3,			KEY_LSHIFT );	// duck
 		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_4,			KEY_J );		// weapon cycle
 		updateSixenseKey( _rightButtonStates, SIXENSE_BUTTON_JOYSTICK,	KEY_SPACE );	// jump
 	}
@@ -518,6 +518,8 @@ void MotionTracker::sixenseMapKeysCustom()
 
 void MotionTracker::sixenseGuiMouseControl()
 {
+	sixenseControllerData rightController = getControllerData(sixenseUtils::ControllerManager::P1R);
+	sixenseUtils::mouseAndKeyboardWin32 mouseKeyboard;
 
 	matrix3x4_t hand = getTrackedRightHand();
 	Vector handPos;
@@ -525,9 +527,10 @@ void MotionTracker::sixenseGuiMouseControl()
 
 	if (( enginevgui && enginevgui->IsGameUIVisible() ) || vgui::surface()->IsCursorVisible() ) {
 	
-		// center mouse if first frame in gui
-		if ( !_isGuiActive ) 
-			mouseKeyboard.sendAbsoluteMouseMove(ScreenWidth()/2.f, ScreenHeight()/2.f);
+		// move mouse to visible corner if first frame in gui
+		if ( !_isGuiActive ) {
+			vgui::input()->SetCursorPos( ScreenWidth()/2, ScreenHeight()/2);
+		}
 		
 		int menuControlMode = mt_menu_control_mode.GetInt();
 		Vector mouseMove(0,0,0);
@@ -546,8 +549,9 @@ void MotionTracker::sixenseGuiMouseControl()
 		mouseKeyboard.sendRelativeMouseMove(-mouseMove.y, mouseMove.z);
 		_isGuiActive = true;
 	} 
-	else
+	else if ( _isGuiActive )
 	{
+		Msg("Gui is no longer active \n");
 		_isGuiActive = false;
 	}
 

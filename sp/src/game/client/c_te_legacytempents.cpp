@@ -1658,6 +1658,10 @@ void CTempEnts::EjectBrass( const Vector &pos1, const QAngle &angles, const QAng
 	if ( pTemp == NULL )
 		return;
 
+
+	Msg("Ejecting brass\n\n");
+
+
 	//Keep track of shell type
 	if ( type == 2 )
 	{
@@ -1692,7 +1696,7 @@ void CTempEnts::EjectBrass( const Vector &pos1, const QAngle &angles, const QAng
 						dir[1] + random->RandomFloat(-64,64),
 						dir[2] + random->RandomFloat(  0,64) ) );
 
-	pTemp->die = gpGlobals->curtime + 1.0f + random->RandomFloat( 0.0f, 1.0f );	// Add an extra 0-1 secs of life	
+	pTemp->die = gpGlobals->curtime + 1.5f + random->RandomFloat( 0.0f, 1.0f );	// Add an extra 0-1 secs of life	
 }
 
 //-----------------------------------------------------------------------------
@@ -2908,7 +2912,7 @@ void CTempEnts::MuzzleFlash_Shotgun_Player( ClientEntityHandle_t hEntity, int at
 	Vector forward, right, up;
 	AngleVectors( angles, &forward, &right, &up );
 
-	SimpleParticle *pParticle;
+	SimpleParticle *pParticle; 
 	Vector offset;
 
 	float flScale = random->RandomFloat( 1.25f, 1.5f );
@@ -3232,6 +3236,13 @@ void CTempEnts::MuzzleFlash_Pistol_Player( ClientEntityHandle_t hEntity, int att
 		pParticle->m_flRoll			= random->RandomInt( 0, 360 );
 		pParticle->m_flRollDelta	= 0.0f;
 	}
+
+	
+	// adding some brass...
+	QAngle shellAngle;
+	right.z += .25; // up the angle a touch...
+	VectorAngles(right, shellAngle);
+	EjectBrass( origin + forward*7.5f + up*4.f, shellAngle, angles, 0 );
 }
 
 //==================================================

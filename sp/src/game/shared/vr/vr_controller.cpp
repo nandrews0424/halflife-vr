@@ -569,10 +569,8 @@ sixenseControllerData MotionTracker::getControllerData(sixenseUtils::IController
 	}
 
 	if ( mt_swap_hydras.GetBool() )
-	{
 		idx = (idx+1) % 2;
-	}
-
+	
 	return _sixenseControllerData->controllers[idx];
 }
 

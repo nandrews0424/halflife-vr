@@ -76,6 +76,42 @@ void WriteUsercmd( bf_write *buf, const CUserCmd *to, const CUserCmd *from )
 		buf->WriteOneBit( 0 );
 	}
 
+
+
+	/*/ weapon offset
+
+	if ( to->viewToWeaponOffset[ 0 ] != from->viewToWeaponOffset[ 0 ] )
+	{
+		buf->WriteOneBit( 1 );
+		buf->WriteFloat( to->viewToWeaponOffset[ 0 ] );
+	}
+	else
+	{
+		buf->WriteOneBit( 0 );
+	}
+
+	if ( to->viewToWeaponOffset[ 1 ] != from->viewToWeaponOffset[ 1 ] )
+	{
+		buf->WriteOneBit( 1 );
+		buf->WriteFloat( to->viewToWeaponOffset[ 1 ] );
+	}
+	else
+	{
+		buf->WriteOneBit( 0 );
+	}
+
+	if ( to->viewToWeaponOffset[ 2 ] != from->viewToWeaponOffset[ 2 ] )
+	{
+		buf->WriteOneBit( 1 );
+		buf->WriteFloat( to->viewToWeaponOffset[ 2 ] );
+	}
+	else
+	{
+		buf->WriteOneBit( 0 );
+	}
+
+	*/
+
 	if ( to->forwardmove != from->forwardmove )
 	{
 		buf->WriteOneBit( 1 );
@@ -236,6 +272,24 @@ void ReadUsercmd( bf_read *buf, CUserCmd *move, CUserCmd *from )
 	{
 		move->viewangles[2] = buf->ReadFloat();
 	}
+
+
+	/* / Read weapon offset
+	if ( buf->ReadOneBit() )
+	{
+		move->viewToWeaponOffset[0] = buf->ReadFloat();
+	}
+
+	if ( buf->ReadOneBit() )
+	{
+		move->viewToWeaponOffset[1] = buf->ReadFloat();
+	}
+
+	if ( buf->ReadOneBit() )
+	{
+		move->viewToWeaponOffset[2] = buf->ReadFloat();
+	}*/
+
 
 	// Moved value validation and clamping to CBasePlayer::ProcessUsercmds()
 

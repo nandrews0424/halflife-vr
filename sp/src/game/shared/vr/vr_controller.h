@@ -37,6 +37,7 @@ public:
 	void	overrideMovement(Vector& movement);								// hooks clientvr,	allows movement vector to be adjusted to account for tracked torso
 	void	overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry);		// in_joystick, allows hydra inputs to apply over others
 	void	updateSixenseButtons();											// checks sixense controller for buttons states and emulates keypress events...
+	void	getEyeToWeaponOffset(Vector& offset);
 
 
 protected:

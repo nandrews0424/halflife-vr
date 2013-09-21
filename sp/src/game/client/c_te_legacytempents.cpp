@@ -2544,7 +2544,7 @@ void CTempEnts::MuzzleFlash_Combine_Player( ClientEntityHandle_t hEntity, int at
 	angles = c->GetAbsAngles();
 	origin = c->GetAbsOrigin();
 		
-	pSimple->GetBinding().SetBBox( origin - Vector( 4, 4, 4 ), origin + Vector( 4, 4, 4 ) );
+	pSimple->GetBinding().SetBBox( origin - Vector( 12, 12, 12 ), origin + Vector( 12, 12, 12 ) );
 	AngleVectors(angles, &forward, &right, &up);
 	
 	// Flash

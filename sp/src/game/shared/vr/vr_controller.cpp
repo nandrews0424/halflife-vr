@@ -186,6 +186,29 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 	vmorigin += weaponPos;
 }
 
+void MotionTracker::getEyeToWeaponOffset(Vector& offset)
+{
+	if ( !_initialized ) 
+	{
+		offset.Init();
+		return;
+	}
+
+	matrix3x4_t weaponMatrix = getTrackedRightHand();
+		
+	// get raw torso and weap positions, construct the distance from the diff of those two + the distance to the eyes from a properly calibrated torso tracker...
+	Vector vWeapon, vEyes;
+	MatrixPosition(weaponMatrix, vWeapon);
+	MatrixPosition(_eyesToTorsoTracker, vEyes);
+	
+	offset = (vWeapon - _vecBaseToTorso)  + vEyes;				
+
+	PositionMatrix(offset, weaponMatrix);							// position is reset rather than distance to base to distance to torso tracker
+	MatrixMultiply(_sixenseToWorld, weaponMatrix, weaponMatrix);	// project weapon matrix by the base engine yaw
+	MatrixPosition(weaponMatrix, offset);							// get the position back off
+}
+
+
 void MotionTracker::overrideViewOffset(VMatrix& viewMatrix)
 {
 	if ( !_initialized || _controlMode == TRACK_BOTH_HANDS  )

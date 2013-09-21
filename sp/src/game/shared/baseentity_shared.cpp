@@ -22,6 +22,7 @@
 
 #ifdef CLIENT_DLL
 	#include "c_te_effect_dispatch.h"
+	#include "vr/vr_controller.h"
 #else
 	#include "te_effect_dispatch.h"
 	#include "soundent.h"
@@ -2177,8 +2178,32 @@ void CBaseEntity::ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *
 		// adjust tracer position for player
 		Vector forward, right;
 		CBasePlayer *pPlayer = ToBasePlayer( this );
+
+		// this is all server side, we should now have the 
+
+
 		pPlayer->EyeVectors( &forward, &right, NULL );
 		*pVecTracerStart = vecShotSrc + Vector ( 0 , 0 , -4 ) + right * 2 + forward * 16;
+		
+
+#if defined( CLIENT_DLL )
+			
+		if ( g_MotionTracker()->isTrackingWeapon() )
+		{
+			Vector weaponPos = pPlayer->EyePosition();
+			QAngle weaponAngle;
+			g_MotionTracker()->updateViewmodelOffset(weaponPos, weaponAngle);
+			Vector forward,right,up;
+			AngleVectors(weaponAngle, &forward, &right, &up);
+			*pVecTracerStart = weaponPos + up*4.f + forward*15.f;
+
+			DebugDrawLine(*pVecTracerStart, *pVecTracerStart + forward*40.f, 0, 255,0, true, 1);
+					
+		}
+#endif
+
+		
+
 	}
 	else
 	{
@@ -2220,7 +2245,7 @@ void CBaseEntity::MakeTracer( const Vector &vecTracerSrc, const trace_t &tr, int
 	const char *pszTracerName = GetTracerType();
 
 	Vector vNewSrc = vecTracerSrc;
-
+	
 	int iAttachment = GetTracerAttachment();
 
 	switch ( iTracerType )

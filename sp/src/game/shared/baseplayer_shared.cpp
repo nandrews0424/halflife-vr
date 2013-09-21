@@ -831,7 +831,7 @@ void CBasePlayer::SetAnimationExtension( const char *pExtension )
 //-----------------------------------------------------------------------------
 // Purpose: Set the weapon to switch to when the player uses the 'lastinv' command
 //-----------------------------------------------------------------------------
-void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon )
+void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon ) 
 {
 	m_hLastWeapon = pWeapon;
 }

@@ -209,29 +209,46 @@ void MotionTracker::getEyeToWeaponOffset(Vector& offset)
 }
 
 
+void MotionTracker::getViewOffset(Vector& offset)
+{
+	if ( !_initialized || _controlMode == TRACK_BOTH_HANDS  )
+	{
+		offset.Init();
+		return;
+	}
+
+	// todo: need to clean this up
+	matrix3x4_t torsoMatrix = getTrackedTorso();
+	MatrixPosition(torsoMatrix, offset);
+	offset -= _vecBaseToTorso;
+	PositionMatrix(offset, torsoMatrix);
+	MatrixMultiply(_sixenseToWorld, torsoMatrix, torsoMatrix);
+	MatrixPosition(torsoMatrix, offset);
+}
+
+
 void MotionTracker::overrideViewOffset(VMatrix& viewMatrix)
 {
 	if ( !_initialized || _controlMode == TRACK_BOTH_HANDS  )
 		return;
 
-	matrix3x4_t torsoMatrix = getTrackedTorso();
 	Vector offset;
-	MatrixPosition(torsoMatrix, offset);
-	offset -= _vecBaseToTorso;
-	PositionMatrix(offset, torsoMatrix);
-
-	// TODO: NA - for whatever reason couldn't seem to get a functioning calibration matrix, too long a day I guess
-
-	MatrixMultiply(_sixenseToWorld, torsoMatrix, torsoMatrix);
-			
-	Vector torsoOffset;
-	MatrixPosition(torsoMatrix, torsoOffset);
-		
+	getViewOffset(offset);
 	Vector viewTranslation = viewMatrix.GetTranslation();
-	viewTranslation += torsoOffset;
+	viewTranslation += offset;
 	viewMatrix.SetTranslation(viewTranslation);
 }
 
+QAngle MotionTracker::getTorsoAngles()
+{
+	float yaw = _baseEngineYaw;
+
+	// left hand orientation can be disregarded when it's just being used as a controller.
+	if ( _controlMode != TRACK_BOTH_HANDS )
+		yaw += _accumulatedYawTorso;
+	
+	return QAngle(0, yaw, 0);
+}
 
 void MotionTracker::overrideWeaponMatrix(VMatrix& weaponMatrix)
 {

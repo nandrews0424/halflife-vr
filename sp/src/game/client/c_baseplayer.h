@@ -158,6 +158,7 @@ public:
 
 	// Eye position..
 	virtual Vector		 EyePosition();
+	QAngle 				 TorsoAngles(); 				 
 	Vector				 EyeToWeaponOffset();
 	virtual const QAngle &EyeAngles();		// Direction of eyes
 	void				 EyePositionAndVectors( Vector *pPosition, Vector *pForward, Vector *pRight, Vector *pUp );
@@ -443,6 +444,8 @@ public:
 	float			m_flConstraintSpeedFactor;
 
 	Vector			m_eyeToWeaponOffset;
+	Vector 			m_eyeOffset;
+	QAngle 			m_torsoAngles;
 
 protected:
 

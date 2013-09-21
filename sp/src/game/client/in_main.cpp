@@ -1262,7 +1262,7 @@ void CInput::CreateMove ( int sequence_number, float input_sample_frametime, boo
 				cmd->sidemove = newMotion[1];
 				cmd->upmove = newMotion[2];
 				cmd->viewangles = newViewangles;
-
+				cmd->torsoYaw = g_MotionTracker()->getTorsoAngles().y;
 				g_MotionTracker()->getEyeToWeaponOffset(cmd->viewToWeaponOffset);
 
 			}

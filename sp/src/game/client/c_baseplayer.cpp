@@ -828,7 +828,8 @@ void C_BasePlayer::PostDataUpdate( DataUpdateType_t updateType )
 		}
 		SetLocalAngles( angles );
 		g_MotionTracker()->getEyeToWeaponOffset(m_eyeToWeaponOffset);		
-		
+		g_MotionTracker()->getViewOffset(m_eyeOffset);
+		m_torsoAngles = g_MotionTracker()->getTorsoAngles();
 
 		if ( !m_bWasFreezeFraming && GetObserverMode() == OBS_MODE_FREEZECAM )
 		{

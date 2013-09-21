@@ -817,6 +817,10 @@ void CBasePlayer::SetStepSoundTime( stepsoundtimes_t iStepSoundTime, bool bWalki
 	}
 }
 
+QAngle CBasePlayer::TorsoAngles( )
+{
+	return m_torsoAngles;	
+}
 
 Vector CBasePlayer::EyeToWeaponOffset( )
 {

@@ -110,6 +110,53 @@ void WriteUsercmd( bf_write *buf, const CUserCmd *to, const CUserCmd *from )
 		buf->WriteOneBit( 0 );
 	}
 
+
+	// eye offset
+
+	if ( to->eyeOffset[ 0 ] != from->eyeOffset[ 0 ] )
+	{
+		buf->WriteOneBit( 1 );
+		buf->WriteFloat( to->eyeOffset[ 0 ] );
+	}
+	else
+	{
+		buf->WriteOneBit( 0 );
+	}
+
+	if ( to->eyeOffset[ 1 ] != from->eyeOffset[ 1 ] )
+	{
+		buf->WriteOneBit( 1 );
+		buf->WriteFloat( to->eyeOffset[ 1 ] );
+	}
+	else
+	{
+		buf->WriteOneBit( 0 );
+	}
+
+	if ( to->eyeOffset[ 2 ] != from->eyeOffset[ 2 ] )
+	{
+		buf->WriteOneBit( 1 );
+		buf->WriteFloat( to->eyeOffset[ 2 ] );
+	}
+	else
+	{
+		buf->WriteOneBit( 0 );
+	}
+
+
+	// torso yaw
+
+	if ( to->torsoYaw != from->torsoYaw )
+	{
+		buf->WriteOneBit( 1 );
+		buf->WriteFloat( to->torsoYaw );
+	}
+	else
+	{
+		buf->WriteOneBit(0);
+	}
+
+
 	if ( to->forwardmove != from->forwardmove )
 	{
 		buf->WriteOneBit( 1 );
@@ -286,6 +333,29 @@ void ReadUsercmd( bf_read *buf, CUserCmd *move, CUserCmd *from )
 	if ( buf->ReadOneBit() )
 	{
 		move->viewToWeaponOffset[2] = buf->ReadFloat();
+	}
+
+
+	// Read eye offset
+	if ( buf->ReadOneBit() )
+	{
+		move->eyeOffset[0] = buf->ReadFloat();
+	}
+
+	if ( buf->ReadOneBit() )
+	{
+		move->eyeOffset[1] = buf->ReadFloat();
+	}
+
+	if ( buf->ReadOneBit() )
+	{
+		move->eyeOffset[2] = buf->ReadFloat();
+	}
+
+	// torso yaw
+	if ( buf->ReadOneBit() )
+	{
+		move->torsoYaw = buf->ReadFloat();		
 	}
 
 	// Moved value validation and clamping to CBasePlayer::ProcessUsercmds()

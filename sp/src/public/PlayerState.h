@@ -32,7 +32,6 @@ public:
 	CNetworkVar( bool, deadflag );	
 	// Viewing angle (player only)
 	QAngle		v_angle;	
-	Vector		viewToWeaponOffset;	
 	
 // The client .dll only cares about deadflag
 //  the game and engine .dlls need to worry about the rest of this data

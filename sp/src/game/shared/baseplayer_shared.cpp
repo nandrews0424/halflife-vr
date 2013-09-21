@@ -817,9 +817,15 @@ void CBasePlayer::SetStepSoundTime( stepsoundtimes_t iStepSoundTime, bool bWalki
 	}
 }
 
+
+Vector CBasePlayer::EyeToWeaponOffset( )
+{
+	return m_eyeToWeaponOffset;
+}
+
 Vector CBasePlayer::Weapon_ShootPosition( )
 {
-	return EyePosition();
+	return EyePosition() + EyeToWeaponOffset();
 }
 
 void CBasePlayer::SetAnimationExtension( const char *pExtension )

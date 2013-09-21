@@ -417,6 +417,8 @@ void CPlayerMove::RunCommand ( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 		player->pl.v_angle = ucmd->viewangles + player->pl.anglechange;
 	}
 
+	player->eyeToWeaponOffset = ucmd->viewToWeaponOffset;
+
 	// Call standard client pre-think
 	RunPreThink( player );
 

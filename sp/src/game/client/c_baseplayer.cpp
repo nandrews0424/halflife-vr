@@ -49,6 +49,7 @@
 #include "steam/steam_api.h"
 #include "headtrack/isourcevirtualreality.h"
 #include "client_virtualreality.h"
+#include "vr/vr_controller.h"
 
 #if defined USES_ECON_ITEMS
 #include "econ_wearable.h"
@@ -826,6 +827,8 @@ void C_BasePlayer::PostDataUpdate( DataUpdateType_t updateType )
 		
 		}
 		SetLocalAngles( angles );
+		g_MotionTracker()->getEyeToWeaponOffset(m_eyeToWeaponOffset);		
+		
 
 		if ( !m_bWasFreezeFraming && GetObserverMode() == OBS_MODE_FREEZECAM )
 		{

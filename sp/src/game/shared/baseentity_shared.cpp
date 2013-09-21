@@ -2176,34 +2176,13 @@ void CBaseEntity::ComputeTracerStartPosition( const Vector &vecShotSrc, Vector *
 	if ( IsPlayer() )
 	{
 		// adjust tracer position for player
-		Vector forward, right;
+		Vector forward, right, up;
 		CBasePlayer *pPlayer = ToBasePlayer( this );
 
-		// this is all server side, we should now have the 
-
-
-		pPlayer->EyeVectors( &forward, &right, NULL );
-		*pVecTracerStart = vecShotSrc + Vector ( 0 , 0 , -4 ) + right * 2 + forward * 16;
-		
-
-#if defined( CLIENT_DLL )
-			
-		if ( g_MotionTracker()->isTrackingWeapon() )
-		{
-			Vector weaponPos = pPlayer->EyePosition();
-			QAngle weaponAngle;
-			g_MotionTracker()->updateViewmodelOffset(weaponPos, weaponAngle);
-			Vector forward,right,up;
-			AngleVectors(weaponAngle, &forward, &right, &up);
-			*pVecTracerStart = weaponPos + up*4.f + forward*15.f;
-
-			DebugDrawLine(*pVecTracerStart, *pVecTracerStart + forward*40.f, 0, 255,0, true, 1);
-					
-		}
-#endif
-
-		
-
+		// should be pPlayer->Weapon_ShootVectors
+		Vector e = pPlayer->EyeToWeaponOffset();
+		pPlayer->EyeVectors( &forward, &right, &up );
+		*pVecTracerStart = pPlayer->Weapon_ShootPosition() + right * 2 + forward * 16 + up * 4;
 	}
 	else
 	{

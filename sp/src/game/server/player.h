@@ -334,7 +334,10 @@ public:
 	int						GetBonusProgress() const { return m_iBonusProgress; }
 	int						GetBonusChallenge() const { return m_iBonusChallenge; }
 
+	Vector					m_eyeToWeaponOffset;
+	
 	virtual Vector			EyePosition( );			// position of eyes
+	Vector					EyeToWeaponOffset();
 	const QAngle			&EyeAngles( );
 	void					EyePositionAndVectors( Vector *pPosition, Vector *pForward, Vector *pRight, Vector *pUp );
 	virtual const QAngle	&LocalEyeAngles();		// Direction of eyes

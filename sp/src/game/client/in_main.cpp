@@ -1104,12 +1104,10 @@ void CInput::ExtraMouseSample( float frametime, bool active )
 			cmd->sidemove = newMotion[1];
 			cmd->upmove = newMotion[2];
 
-
 			cmd->viewangles = newViewangles;
 			prediction->SetLocalViewAngles( cmd->viewangles );
 
 			g_MotionTracker()->getEyeToWeaponOffset(cmd->viewToWeaponOffset);
-
 		}
 	}
 
@@ -1264,6 +1262,9 @@ void CInput::CreateMove ( int sequence_number, float input_sample_frametime, boo
 				cmd->sidemove = newMotion[1];
 				cmd->upmove = newMotion[2];
 				cmd->viewangles = newViewangles;
+
+				g_MotionTracker()->getEyeToWeaponOffset(cmd->viewToWeaponOffset);
+
 			}
 			else
 			{

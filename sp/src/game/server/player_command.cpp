@@ -361,6 +361,9 @@ void CPlayerMove::RunCommand ( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 		}
 	}
 
+	// Assign the tracked weapon offset
+	player->m_eyeToWeaponOffset = ucmd->viewToWeaponOffset;
+	
 	/*
 	// TODO:  We can check whether the player is sending more commands than elapsed real time
 	cmdtimeremaining -= ucmd->msec;
@@ -416,10 +419,6 @@ void CPlayerMove::RunCommand ( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 	{
 		player->pl.v_angle = ucmd->viewangles + player->pl.anglechange;
 	}
-
-	// vr todo: what's going on here...
-	// player->pl.viewToWeaponOffset = ucmd->viewToWeaponOffset;
-
 
 	// Call standard client pre-think
 	RunPreThink( player );

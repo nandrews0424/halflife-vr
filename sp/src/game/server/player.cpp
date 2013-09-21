@@ -584,6 +584,7 @@ CBasePlayer::CBasePlayer( )
 	m_bForceOrigin = false;
 	m_hVehicle = NULL;
 	m_pCurrentCommand = NULL;
+	m_eyeToWeaponOffset.Init();
 	
 	// Setup our default FOV
 	m_iDefaultFOV = g_pGameRules->DefaultFOV();
@@ -3643,6 +3644,8 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 	{
 		VectorCopy ( ucmd->viewangles, pl.v_angle );
 	}
+
+	VectorCopy(ucmd->viewToWeaponOffset, m_eyeToWeaponOffset);
 
 	// Handle FL_FROZEN.
 	// Prevent player moving for some seconds after New Game, so that they pick up everything

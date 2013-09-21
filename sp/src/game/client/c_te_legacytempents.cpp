@@ -1658,10 +1658,6 @@ void CTempEnts::EjectBrass( const Vector &pos1, const QAngle &angles, const QAng
 	if ( pTemp == NULL )
 		return;
 
-
-	Msg("Ejecting brass\n\n");
-
-
 	//Keep track of shell type
 	if ( type == 2 )
 	{

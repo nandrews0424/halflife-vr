@@ -32,11 +32,14 @@ public:
 	void update(VMatrix& torsoMatrix);
 		
 	void	updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles);		// hooks clientvr	for now, can move directly into viewmodel_shared
+	void 	getViewOffset(Vector& offset);
 	void	overrideViewOffset(VMatrix& viewMatrix);						// hooks clientvr,	updates the view matrix based on torso tracked offsets
 	void	overrideWeaponMatrix(VMatrix& weaponMatrix);					// hooks clientvr	player motion, updates weapon matrix per tracked values
+	QAngle	getTorsoAngles();
 	void	overrideMovement(Vector& movement);								// hooks clientvr,	allows movement vector to be adjusted to account for tracked torso
 	void	overrideJoystickInputs(float& lx, float& ly, float& rx, float& ry);		// in_joystick, allows hydra inputs to apply over others
 	void	updateSixenseButtons();											// checks sixense controller for buttons states and emulates keypress events...
+	void	getEyeToWeaponOffset(Vector& offset);
 
 
 protected:
@@ -67,6 +70,7 @@ protected:
 	bool		_rightBumperPressed;
 	Vector		_previousHandPosition;
 	QAngle		_previousHandAngle; // for mouse emulation
+	bool		_isGuiActive;
 
 	struct		_sixenseAllControllerData *_sixenseControllerData;
 	class		sixenseUtils::IButtonStates *_leftButtonStates, *_rightButtonStates;
@@ -75,6 +79,9 @@ protected:
 	void		sixenseInitialize();
 	void		sixenseUpdate();
 	void		sixenseShutdown();
+	void		sixenseGuiMouseControl();
+	void		sixenseMapKeys();
+	void		sixenseMapKeysCustom();
 	sixenseControllerData getControllerData(sixenseUtils::IControllerManager::controller_desc controller);
 };
 

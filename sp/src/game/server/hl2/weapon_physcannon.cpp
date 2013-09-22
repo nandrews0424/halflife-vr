@@ -476,6 +476,7 @@ public:
 	float GetLoadWeight( void ) const { return m_flLoadWeight; }
 	void SetAngleAlignment( float alignAngleCosine ) { m_angleAlignment = alignAngleCosine; }
 	void SetIgnorePitch( bool bIgnore ) { m_bIgnoreRelativePitch = bIgnore; }
+	void SetHandPickup( bool handPickup ) { m_bHands = handPickup; }
 	QAngle TransformAnglesToPlayerSpace( const QAngle &anglesIn, CBasePlayer *pPlayer );
 	QAngle TransformAnglesFromPlayerSpace( const QAngle &anglesIn, CBasePlayer *pPlayer );
 
@@ -498,6 +499,7 @@ private:
 	float			m_angleAlignment;
 	bool			m_bCarriedEntityBlocksLOS;
 	bool			m_bIgnoreRelativePitch;
+	bool 			m_bHands;
 
 	float			m_flLoadWeight;
 	float			m_savedRotDamping[VPHYSICS_MAX_OBJECT_LIST_COUNT];
@@ -567,6 +569,7 @@ CGrabController::CGrabController( void )
 	m_flDistanceOffset = 0;
 	// NVNT constructing m_pControllingPlayer to NULL
 	m_pControllingPlayer = NULL;
+	m_bHands = false;
 }
 
 CGrabController::~CGrabController( void )
@@ -1040,7 +1043,9 @@ void CPlayerPickupController::Init( CBasePlayer *pPlayer, CBaseEntity *pObject )
 	// done so I'll go across level transitions with the player
 	SetParent( pPlayer );
 	m_grabController.SetIgnorePitch( true );
+	m_grabController.SetHandPickup( true );
 	m_grabController.SetAngleAlignment( DOT_30DEGREE );
+
 	m_pPlayer = pPlayer;
 	IPhysicsObject *pPhysics = pObject->VPhysicsGetObject();
 	
@@ -2761,15 +2766,17 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 	
 	float pitch = AngleDistance(playerAngles.x,0);
 
-	if( !m_bAllowObjectOverhead )
-	{
-		playerAngles.x = clamp( pitch, -75, 75 );
-	}
-	else
-	{
-		playerAngles.x = clamp( pitch, -90, 75 );
-	}
 
+	if (!m_bHands) {
+		if( !m_bAllowObjectOverhead )
+		{
+			playerAngles.x = clamp( pitch, -75, 75 );
+		}
+		else
+		{
+			playerAngles.x = clamp( pitch, -90, 75 );
+		}
+	}
 	
 	
 	// Now clamp a sphere of object radius at end to the player's bbox
@@ -2778,12 +2785,30 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 	float playerRadius = player2d.Length2D();
 	float radius = playerRadius + fabs(DotProduct( forward, radial ));
 
-	float distance = 24 + ( radius * 2.0f );
+	float distance = 20 + ( radius * 2.0f );
+	Vector start = pPlayer->Weapon_ShootPosition();
 
+		
+	// we're just using our hands here, so push it out a bit to keep from contacting player but allow normal hand control
+	if ( m_bHands ) {
+		forward = pPlayer->EyeToWeaponOffset().Normalized();
+		forward.z = 0; // just push it forward, not up or down
+		distance = radius*1.5 + m_flDistanceOffset;
+		start.z += pPlayer->EyeToWeaponOffset().z / 2; // doubles the hand up/down offset to make it a bit easier to stack etc
+		
+		Vector torsoForward;
+		AngleVectors(pPlayer->TorsoAngles(), &torsoForward);
+
+		float eyeOffsetLength = pPlayer->EyeToWeaponOffset().Length();
+		float pctOffsetFromEyeToWeapon = Clamp((eyeOffsetLength-5.f) / 15.f, .25f, .75f);
+		SetTargetPosition( start + forward * (distance*pctOffsetFromEyeToWeapon) + torsoForward * (distance*(1-pctOffsetFromEyeToWeapon)), playerAngles );
+		return true;
+	}
+	
 	// Add the prop's distance offset
 	distance += m_flDistanceOffset;
 
-	Vector start = pPlayer->Weapon_ShootPosition();
+	
 	Vector end = start + ( forward * distance );
 
 	trace_t	tr;
@@ -2828,6 +2853,14 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 							0.0f );
 	}
 
+
+	if ( m_bHands )
+	{
+		SetTargetPosition( end, playerAngles );
+		return true;
+	}
+
+
 	QAngle angles = TransformAnglesFromPlayerSpace( m_attachedAnglesPlayerSpace, pPlayer );
 	
 	// If it has a preferred orientation, update to ensure we're still oriented correctly.
@@ -2845,7 +2878,7 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 	Vector offset;
 	AngleMatrix( angles, attachedToWorld );
 	VectorRotate( m_attachedPositionObjectSpace, attachedToWorld, offset );
-
+		
 	SetTargetPosition( end - offset, angles );
 
 	return true;
@@ -3826,7 +3859,6 @@ void CWeaponPhysCannon::StartEffects( void )
 			GetAbsOrigin(), false );
 
 		m_hCenterSprite->SetAsTemporary();
-		m_hCenterSprite->SetAttachment( pOwner->GetViewModel(), 1 );
 		m_hCenterSprite->SetTransparency( kRenderTransAdd, 255, 255, 255, 255, kRenderFxNone );
 		m_hCenterSprite->SetBrightness( 255, 0.2f );
 		m_hCenterSprite->SetScale( 0.1f, 0.2f );
@@ -3962,12 +3994,12 @@ void CWeaponPhysCannon::DoEffectReady( )
 	float flScaleFactor = SpriteScaleFactor();
 
 	//Turn on the center sprite
-	if ( m_hCenterSprite != NULL )
+	/*if ( m_hCenterSprite != NULL )
 	{
 		m_hCenterSprite->SetBrightness( 128, 0.2f );
 		m_hCenterSprite->SetScale( 0.15f, 0.2f );
 		m_hCenterSprite->TurnOn();
-	}
+	}*/
 
 	//Turn off the end-caps
 	for ( int i = 0; i < 2; i++ )
@@ -3988,20 +4020,20 @@ void CWeaponPhysCannon::DoEffectReady( )
 	}
 
 	//Turn on the glow sprites
-	for ( int i = 0; i < NUM_SPRITES; i++ )
+	/*for ( int i = 0; i < NUM_SPRITES; i++ )
 	{
 		if ( m_hGlowSprites[i] != NULL )
 		{
 			m_hGlowSprites[i]->TurnOn();
 			m_hGlowSprites[i]->SetBrightness( 32.0f, 0.2f );
 			m_hGlowSprites[i]->SetScale( 0.4f * flScaleFactor, 0.2f );
-		}
-	}
+		}*
+	}*/
 
 	//Scale down
 	if ( m_hBlastSprite != NULL )
 	{
-		m_hBlastSprite->TurnOn();
+		// m_hBlastSprite->TurnOn();
 		m_hBlastSprite->SetScale( 0.1f, 0.2f );
 		m_hBlastSprite->SetBrightness( 255, 0.1f );
 	}

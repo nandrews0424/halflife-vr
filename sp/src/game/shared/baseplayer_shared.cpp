@@ -817,9 +817,19 @@ void CBasePlayer::SetStepSoundTime( stepsoundtimes_t iStepSoundTime, bool bWalki
 	}
 }
 
+QAngle CBasePlayer::TorsoAngles( )
+{
+	return m_torsoAngles;	
+}
+
+Vector CBasePlayer::EyeToWeaponOffset( )
+{
+	return m_eyeToWeaponOffset;
+}
+
 Vector CBasePlayer::Weapon_ShootPosition( )
 {
-	return EyePosition();
+	return EyePosition() + EyeToWeaponOffset();
 }
 
 void CBasePlayer::SetAnimationExtension( const char *pExtension )
@@ -831,7 +841,7 @@ void CBasePlayer::SetAnimationExtension( const char *pExtension )
 //-----------------------------------------------------------------------------
 // Purpose: Set the weapon to switch to when the player uses the 'lastinv' command
 //-----------------------------------------------------------------------------
-void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon )
+void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon ) 
 {
 	m_hLastWeapon = pWeapon;
 }

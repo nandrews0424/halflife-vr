@@ -3859,7 +3859,6 @@ void CWeaponPhysCannon::StartEffects( void )
 			GetAbsOrigin(), false );
 
 		m_hCenterSprite->SetAsTemporary();
-		m_hCenterSprite->SetAttachment( pOwner->GetViewModel(), 1 );
 		m_hCenterSprite->SetTransparency( kRenderTransAdd, 255, 255, 255, 255, kRenderFxNone );
 		m_hCenterSprite->SetBrightness( 255, 0.2f );
 		m_hCenterSprite->SetScale( 0.1f, 0.2f );
@@ -3995,12 +3994,12 @@ void CWeaponPhysCannon::DoEffectReady( )
 	float flScaleFactor = SpriteScaleFactor();
 
 	//Turn on the center sprite
-	if ( m_hCenterSprite != NULL )
+	/*if ( m_hCenterSprite != NULL )
 	{
 		m_hCenterSprite->SetBrightness( 128, 0.2f );
 		m_hCenterSprite->SetScale( 0.15f, 0.2f );
 		m_hCenterSprite->TurnOn();
-	}
+	}*/
 
 	//Turn off the end-caps
 	for ( int i = 0; i < 2; i++ )
@@ -4021,20 +4020,20 @@ void CWeaponPhysCannon::DoEffectReady( )
 	}
 
 	//Turn on the glow sprites
-	for ( int i = 0; i < NUM_SPRITES; i++ )
+	/*for ( int i = 0; i < NUM_SPRITES; i++ )
 	{
 		if ( m_hGlowSprites[i] != NULL )
 		{
 			m_hGlowSprites[i]->TurnOn();
 			m_hGlowSprites[i]->SetBrightness( 32.0f, 0.2f );
 			m_hGlowSprites[i]->SetScale( 0.4f * flScaleFactor, 0.2f );
-		}
-	}
+		}*
+	}*/
 
 	//Scale down
 	if ( m_hBlastSprite != NULL )
 	{
-		m_hBlastSprite->TurnOn();
+		// m_hBlastSprite->TurnOn();
 		m_hBlastSprite->SetScale( 0.1f, 0.2f );
 		m_hBlastSprite->SetBrightness( 255, 0.1f );
 	}

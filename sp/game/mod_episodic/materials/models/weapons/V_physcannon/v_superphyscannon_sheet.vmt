@@ -1,0 +1,18 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "Models/Weapons/V_physcannon/v_superphyscannon_sheet"
+	"$selfillum" "1"
+	"$bumpmap" "Models/Weapons/V_physcannon/v_physcannon_normal"
+	//"$envmap" "env_cubemap"
+	//"$envmapmask" "Models/Weapons/V_physcannon/v_physcannon_mask"
+	//"$envmapcontrast" ".7"
+	//"$envmapsaturation" "[.8 .8 .8]"
+ 	"$phong" "1"
+	"$phongexponent" "8"
+	"$phongboost"	"3"
+	"$phongfresnelranges"	"[0.05 0.5 1]"
+	"$phongalbedotint" "1"
+
+
+}
+	

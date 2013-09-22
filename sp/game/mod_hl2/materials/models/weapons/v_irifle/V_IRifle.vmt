@@ -1,0 +1,12 @@
+"VertexLitGeneric"
+{
+	"$basetexture" "models/Weapons/V_IRifle/V_IRifle"
+	"$surfaceprop" "metal"
+	"$envmaptint" "[.75 .9 1]"
+	"$envmap" "env_cubemap"	
+	"$bumpmap" "models/Weapons/V_IRifle/V_IRifle_Local"
+	"$normalmapalphaenvmapmask" 1
+	"$envmapcontrast" 1
+	"$model" 1
+	"$selfillum" 1
+}

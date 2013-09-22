@@ -3181,14 +3181,14 @@ void CViewRender::DrawScope( const CViewSetup &viewSet )
 		g_MotionTracker()->updateViewmodelOffset(scopeView.origin, scopeView.angles);
 	}
   	
-		//Get our camera render target.
+	//Get our camera render target.
 	ITexture *pRenderTarget = GetScopeTexture();
  
 	if( pRenderTarget == NULL )
 		return;
  
-	if( !pRenderTarget->IsRenderTarget() )
-		Msg(" not a render target");
+	//	if( !pRenderTarget->IsRenderTarget() )
+	//		Msg(" not a render target");
  
 	//Our view information, Origin, View Direction, window size
 	//  location on material, and visual ratios.

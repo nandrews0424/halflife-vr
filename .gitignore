@@ -75,5 +75,7 @@ config.cfg
 *.tmp
 
 sp/game/installer/output
-
+server_blacklist.txt
+*_gamestats.dat
+stats.txt
 

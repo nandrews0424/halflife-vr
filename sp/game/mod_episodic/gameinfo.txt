@@ -19,29 +19,23 @@
 		
 		SearchPaths
 		{
-			game+mod			episodic/custom/*
-			game+mod			hl2/custom/*
+			game+mod+mod_write+default_write_path	|gameinfo_path|.		// Mod
+			gamebin									|gameinfo_path|bin		// Mod's Binaries
 
-			game+mod+mod_write+default_write_path		|gameinfo_path|.
-			gamebin				|gameinfo_path|bin
-			game_lv				hl2/hl2_lv.vpk
-			game+mod			episodic/ep1_english.vpk
-			game+mod			episodic/ep1_pak.vpk
-			game				|all_source_engine_paths|episodic/ep1_english.vpk
-			game				|all_source_engine_paths|episodic/ep1_pak.vpk
-			game				|all_source_engine_paths|hl2/hl2_english.vpk
-			game				|all_source_engine_paths|hl2/hl2_pak.vpk
-			game				|all_source_engine_paths|hl2/hl2_textures.vpk
-			game				|all_source_engine_paths|hl2/hl2_sound_vo_english.vpk
-			game				|all_source_engine_paths|hl2/hl2_sound_misc.vpk
-			game				|all_source_engine_paths|hl2/hl2_misc.vpk
-			platform			|all_source_engine_paths|platform/platform_misc.vpk
+			game_lv					|all_source_engine_paths|hl2/hl2_lv.vpk
+			game					|all_source_engine_paths|episodic/ep1_english.vpk
+			game					|all_source_engine_paths|episodic/ep1_pak.vpk
+			game					|all_source_engine_paths|hl2/hl2_english.vpk
+			game					|all_source_engine_paths|hl2/hl2_pak.vpk
+			game					|all_source_engine_paths|hl2/hl2_textures.vpk
+			game					|all_source_engine_paths|hl2/hl2_sound_vo_english.vpk
+			game					|all_source_engine_paths|hl2/hl2_sound_misc.vpk
+			game					|all_source_engine_paths|hl2/hl2_misc.vpk
+			platform				|all_source_engine_paths|platform/platform_misc.vpk
 
-			game+game_write		episodic
-
-			game				|all_source_engine_paths|episodic
-			game				|all_source_engine_paths|hl2
-			platform			|all_source_engine_paths|platform
+			game					|all_source_engine_paths|episodic
+			game					|all_source_engine_paths|hl2
+			platform				|all_source_engine_paths|platform
 		}
 	}
 }

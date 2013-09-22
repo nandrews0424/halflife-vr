@@ -1,0 +1,9 @@
+"vertexlitgeneric"
+{
+	"$baseTexture" "Models/Weapons/V_shotgun/vshotgun_albedo"
+	"$bumpmap" "models/Weapons/V_shotgun/vshotgun_albedo_norm"
+	"$envmap" "env_cubemap"
+	"$normalmapalphaenvmapmask" 1
+
+}
+

@@ -1279,17 +1279,38 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 	else
 	{
 		static const float aspectRatio = 4.f/3.f;
-		float width = 34; // vr_hud_width.GetFloat();
+		float width = 24; // vr_hud_width.GetFloat();
 		float height = width / aspectRatio;
 		
-		vHalfWidth = m_WorldFromHud.GetLeft() * -width/2.f; 
-		vHalfHeight = m_WorldFromHud.GetUp()  *  height/2.f; 
+		VMatrix mHud(m_WorldFromWeapon);
+		g_MotionTracker()->overrideWeaponMatrix(mHud);
+				
+		MatrixRotate(mHud, Vector(0,0,1), -90.f);
+
+		vHalfWidth = mHud.GetLeft() * -width/2.f; 
+		vHalfHeight = mHud.GetUp()  *  height/2.f; 
 
 		Vector forward, right, up;
 		AngleVectors(m_PlayerTorsoAngle, &forward, &right, &up);
 
-		// move it to about the chest...
-		vHUDOrigin = m_PlayerTorsoOrigin + up*-24 + forward*22;
+		Vector weapOffset;
+		g_MotionTracker()->getEyeToWeaponOffset(weapOffset);
+		
+		Vector hudOffset(0,0,0);
+
+		// get hud offset specific to the weapon (coordinates are hud relative, not weapon)
+		CBasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+		if ( pPlayer != NULL )
+		{
+			C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
+			if ( pWeapon )
+			{
+				hudOffset = pPlayer->GetActiveWeapon()->GetWpnData().weaponHudOffset;
+			}
+		}
+		
+		// Adjust the hud origin per the weapon configuration
+		vHUDOrigin = m_PlayerTorsoOrigin + weapOffset + mHud.GetLeft()*-hudOffset.y + mHud.GetForward()*hudOffset.x + mHud.GetUp()*hudOffset.z + vHalfWidth; 
 	}
 
 
@@ -1316,13 +1337,41 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 		if ( bTranslucent )
 		{
 			mymat = materials->FindMaterial( "vgui/inworldui", TEXTURE_GROUP_VGUI );
+
+
+			// this is in game, modulate the hud alpha based on angular difference between weapon and view yaw
+
+			VMatrix mWeap(m_WorldFromWeapon);
+			g_MotionTracker()->overrideWeaponMatrix(mWeap);
+			
+			QAngle weapAngle, viewAngle;
+			MatrixAngles(mWeap.As3x4(), weapAngle);
+			MatrixAngles(m_WorldFromMidEye.As3x4(), viewAngle);
+			
+			// 0 - 90 is ideal
+			float alpha = 0;
+
+			
+			float diff = AngleDiff(weapAngle.y, viewAngle.y);
+
+			// wrap around 90
+			if ( diff > 120 && diff <= 220 )
+				diff = fabs(diff - 220);
+
+			if ( diff > 0 && diff <= 110 )
+			{	
+				alpha = (diff-20)/90.f;
+			}
+
+			mymat->AlphaModulate(alpha);
 		}
 		else
 		{
 			mymat = materials->FindMaterial( "vgui/inworldui_opaque", TEXTURE_GROUP_VGUI );
 		}
 		Assert( !mymat->IsErrorMaterial() );
-		
+			
+
 		IMesh *pMesh = pRenderContext->GetDynamicMesh( true, NULL, NULL, mymat );
 
 		CMeshBuilder meshBuilder;
@@ -1345,8 +1394,9 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 		meshBuilder.AdvanceVertexF<VTX_HAVEPOS, 1>();
 
 		meshBuilder.End();
-				
+
 		pMesh->Draw();
+		
 	}
 
 	if( bBlackout )

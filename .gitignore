@@ -78,4 +78,6 @@ sp/game/installer/output
 server_blacklist.txt
 *_gamestats.dat
 stats.txt
-
+sp/game/mod_episodic/downloadlists
+sp/game/mod_ep2/downloadlists
+sp/game/mod_hl2/downloadlists

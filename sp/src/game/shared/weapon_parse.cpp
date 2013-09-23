@@ -460,5 +460,15 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 			}
 		}
 	}
+	
+	// VR Mod - parse hud weapon offsets... settings are hud relative (forward is as looking at the hud not weapon alignment)
+	weaponHudOffset.Init(-3, -11, 3);
+	
+	KeyValues *offsets = pKeyValuesData->FindKey( "weaponHudOffset" );
+	if(offsets)
+	{
+		weaponHudOffset.x			= offsets->GetFloat( "forward", weaponHudOffset.x );
+		weaponHudOffset.y			= offsets->GetFloat( "right", weaponHudOffset.y );
+		weaponHudOffset.z			= offsets->GetFloat( "up", weaponHudOffset.z );
+	}
 }
-

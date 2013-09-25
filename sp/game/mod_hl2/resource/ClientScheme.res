@@ -23,7 +23,8 @@ Scheme
 	// controls use these to determine their settings
 	BaseSettings
 	{
-		"FgColor"			"255 220 0 100"
+		"DimFg"			"255 220 0 180"
+		"FgColor"			"255 220 0 180"
 		"FgColor_vrmode"	"255 220 0 200"
 		"BgColor"			"0 0 0 76"
 

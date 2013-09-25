@@ -18,6 +18,11 @@ WeaponData
 	"weight"		"6"
 	"item_flags"		"0"
 	
+	weaponHudOffset
+	{
+		"forward"		"-3.5"
+	}
+
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{

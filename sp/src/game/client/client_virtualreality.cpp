@@ -60,7 +60,7 @@ ConVar vr_dont_use_calibration_projection ( "vr_dont_use_calibration_projection"
 
 // HUD config values
 ConVar vr_render_hud_in_world( "vr_render_hud_in_world", "1" );
-ConVar vr_hud_max_fov( "vr_hud_max_fov", "60", FCVAR_ARCHIVE, "Max FOV of the HUD" );
+ConVar vr_hud_max_fov( "vr_hud_max_fov", "70", FCVAR_ARCHIVE, "Max FOV of the Menus" );
 ConVar vr_hud_forward( "vr_hud_forward", "500", FCVAR_ARCHIVE, "Apparent distance of the HUD in inches" );
 ConVar vr_hud_display_ratio( "vr_hud_display_ratio", "0.95", FCVAR_ARCHIVE );
 
@@ -214,6 +214,13 @@ void CalcFovFromProjection ( float *pFov, const VMatrix &proj )
 	*pFov = Max ( Max ( fov_px, fov_nx ), Max ( fov_py, fov_ny ) );
 	// FIXME: hey you know, I could do the Max() series before I call all those expensive atanf()s...
 }
+
+static bool IsMenuUp( )
+{
+	return ((enginevgui && enginevgui->IsGameUIVisible())  || vgui::surface()->IsCursorVisible() );
+}
+
+
 
 
 // --------------------------------------------------------------------
@@ -716,8 +723,8 @@ bool CClientVirtualReality::OverrideStereoView( CViewSetup *pViewMiddle, CViewSe
 	static const float fAspectRatio = 4.f/3.f;
 	float fHFOV = m_fHudHorizontalFov;
 	float fVFOV = m_fHudHorizontalFov / fAspectRatio;
-
-	const float fHudForward = vr_hud_forward.GetFloat();
+	
+	float fHudForward = vr_hud_forward.GetFloat();
 	m_fHudHalfWidth = tan( DEG2RAD( fHFOV * 0.5f ) ) * fHudForward * m_WorldZoomScale;
 	m_fHudHalfHeight = tan( DEG2RAD( fVFOV * 0.5f ) ) * fHudForward * m_WorldZoomScale;
 
@@ -763,10 +770,54 @@ bool CClientVirtualReality::OverrideStereoView( CViewSetup *pViewMiddle, CViewSe
 		MatrixAngles( m_WorldFromWeapon.As3x4(), aimAngles );
 		HudAngles[YAW] = aimAngles[YAW];
 	}
+	
+	// when gui isn't up we'll do custom attached to weapon HUD......
+	if ( ! IsMenuUp( ))
+	{
+		VMatrix m;
+		AngleMatrix(m_PlayerTorsoAngle, m.As3x4());
+		MatrixRotate(m, Vector(0,1,0), 50.f);
+		MatrixAngles( m.As3x4(), HudAngles );
+		HudUpCorrection = g_pSourceVR->GetHudUpCorrection();
+		AngleMatrix ( HudAngles, m_WorldFromHud.As3x4() );
+				
+		m_WorldFromHud.SetTranslation ( m_PlayerViewOrigin );
+		
+		// Remember in source X forwards, Y left, Z up.
+		// We need to transform to a more conventional X right, Y up, Z backwards before doing the projection.
+		VMatrix WorldFromHudView;
+		WorldFromHudView./*X vector*/SetForward ( -m_WorldFromHud.GetLeft() );
+		WorldFromHudView./*Y vector*/SetLeft    ( m_WorldFromHud.GetUp() );
+		WorldFromHudView./*Z vector*/SetUp      ( -m_WorldFromHud.GetForward() );
+		WorldFromHudView.SetTranslation         ( m_PlayerViewOrigin );
+
+		VMatrix HudProjection;
+		HudProjection.Identity();
+
+
+		
+		HudProjection.m[0][0] = 0;
+		HudProjection.m[1][1] = 0;
+		// Z vector is not used/valid, but w is for projection.
+		HudProjection.m[3][2] = -1.0f;
+
+		// This will transform a world point into a homogeneous vector that
+		//  when projected (i.e. divide by w) maps to HUD space [-1,1]
+		m_HudProjectionFromWorld = HudProjection * WorldFromHudView.InverseTR();
+
+		return true;
+	
+	
+	
+	
+	
+	}
+	
 	AngleMatrix ( HudAngles, m_WorldFromHud.As3x4() );
 	m_WorldFromHud.SetTranslation ( m_PlayerViewOrigin );
 	m_WorldFromHud = m_WorldFromHud * HudUpCorrection;
 
+	
 	// Remember in source X forwards, Y left, Z up.
 	// We need to transform to a more conventional X right, Y up, Z backwards before doing the projection.
 	VMatrix WorldFromHudView;
@@ -1218,7 +1269,50 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 {
 	Vector vHalfWidth = m_WorldFromHud.GetLeft() * -m_fHudHalfWidth;
 	Vector vHalfHeight = m_WorldFromHud.GetUp() * m_fHudHalfHeight;
-	Vector vHUDOrigin = m_PlayerViewOrigin + m_WorldFromHud.GetForward() * vr_hud_forward.GetFloat();
+	
+	Vector vHUDOrigin;
+
+	if ( IsMenuUp() )
+	{
+		vHUDOrigin = m_PlayerViewOrigin + m_WorldFromHud.GetForward() * vr_hud_forward.GetFloat();
+	}
+	else
+	{
+		static const float aspectRatio = 4.f/3.f;
+		float width = 24; // vr_hud_width.GetFloat();
+		float height = width / aspectRatio;
+		
+		VMatrix mHud(m_WorldFromWeapon);
+		g_MotionTracker()->overrideWeaponMatrix(mHud);
+				
+		MatrixRotate(mHud, Vector(0,0,1), -90.f);
+
+		vHalfWidth = mHud.GetLeft() * -width/2.f; 
+		vHalfHeight = mHud.GetUp()  *  height/2.f; 
+
+		Vector forward, right, up;
+		AngleVectors(m_PlayerTorsoAngle, &forward, &right, &up);
+
+		Vector weapOffset;
+		g_MotionTracker()->getEyeToWeaponOffset(weapOffset);
+		
+		Vector hudOffset(0,0,0);
+
+		// get hud offset specific to the weapon (coordinates are hud relative, not weapon)
+		CBasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+		if ( pPlayer != NULL )
+		{
+			C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
+			if ( pWeapon )
+			{
+				hudOffset = pPlayer->GetActiveWeapon()->GetWpnData().weaponHudOffset;
+			}
+		}
+		
+		// Adjust the hud origin per the weapon configuration
+		vHUDOrigin = m_PlayerTorsoOrigin + weapOffset + mHud.GetLeft()*-hudOffset.y + mHud.GetForward()*hudOffset.x + mHud.GetUp()*hudOffset.z + vHalfWidth; 
+	}
+
 
 	*pViewer = m_PlayerViewOrigin;
 	*pUL = vHUDOrigin - vHalfWidth + vHalfHeight;
@@ -1243,12 +1337,40 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 		if ( bTranslucent )
 		{
 			mymat = materials->FindMaterial( "vgui/inworldui", TEXTURE_GROUP_VGUI );
+
+
+			// this is in game, modulate the hud alpha based on angular difference between weapon and view yaw
+
+			VMatrix mWeap(m_WorldFromWeapon);
+			g_MotionTracker()->overrideWeaponMatrix(mWeap);
+			
+			QAngle weapAngle, viewAngle;
+			MatrixAngles(mWeap.As3x4(), weapAngle);
+			MatrixAngles(m_WorldFromMidEye.As3x4(), viewAngle);
+			
+			// 0 - 90 is ideal
+			float alpha = 0;
+
+			
+			float diff = AngleDiff(weapAngle.y, viewAngle.y);
+
+			// wrap around 90
+			if ( diff > 120 && diff <= 220 )
+				diff = fabs(diff - 220);
+
+			if ( diff > 0 && diff <= 110 )
+			{	
+				alpha = (diff-20)/90.f;
+			}
+
+			mymat->AlphaModulate(alpha);
 		}
 		else
 		{
 			mymat = materials->FindMaterial( "vgui/inworldui_opaque", TEXTURE_GROUP_VGUI );
 		}
 		Assert( !mymat->IsErrorMaterial() );
+			
 
 		IMesh *pMesh = pRenderContext->GetDynamicMesh( true, NULL, NULL, mymat );
 
@@ -1272,7 +1394,9 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 		meshBuilder.AdvanceVertexF<VTX_HAVEPOS, 1>();
 
 		meshBuilder.End();
+
 		pMesh->Draw();
+		
 	}
 
 	if( bBlackout )

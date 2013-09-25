@@ -264,6 +264,9 @@ void AddMultiDamage( const CTakeDamageInfo &info, CBaseEntity *pEntity )
 			static int warningCount = 0;
 			if ( ++warningCount < 10 )
 			{
+
+				// VR TODO: why are we tripping this
+
 				if ( g_MultiDamage.GetDamageForce() == vec3_origin )
 				{
 					Warning( "AddMultiDamage:  g_MultiDamage.GetDamageForce() == vec3_origin\n" );

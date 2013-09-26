@@ -154,6 +154,10 @@ void FormatViewModelAttachment( Vector &vOrigin, bool bInverse );
 void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin, QAngle *pAngles )
 {
 	C_BaseEntity *pEnt = pAttachedTo->GetBaseEntity();
+
+	// todo: I can hijack and check the angles to adjust the opacity here
+	// m_PanelWrapper.GetPanel()->SetAlpha(122);
+
 	if (pEnt && (m_nAttachmentIndex > 0))
 	{
 		{

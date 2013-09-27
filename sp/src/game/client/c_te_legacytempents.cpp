@@ -36,10 +36,6 @@
 #include "c_props.h"
 #include "c_basedoor.h"
 
-#include "vr\vr_controller.h"
-
-
-
 // NOTE: Always include this last!
 #include "tier0/memdbgon.h"
 
@@ -1692,7 +1688,7 @@ void CTempEnts::EjectBrass( const Vector &pos1, const QAngle &angles, const QAng
 						dir[1] + random->RandomFloat(-64,64),
 						dir[2] + random->RandomFloat(  0,64) ) );
 
-	pTemp->die = gpGlobals->curtime + 1.5f + random->RandomFloat( 0.0f, 1.0f );	// Add an extra 0-1 secs of life	
+	pTemp->die = gpGlobals->curtime + 1.0f + random->RandomFloat( 0.0f, 1.0f );	// Add an extra 0-1 secs of life	
 }
 
 //-----------------------------------------------------------------------------
@@ -2529,28 +2525,21 @@ inline void CTempEnts::CacheMuzzleFlashes( void )
 void CTempEnts::MuzzleFlash_Combine_Player( ClientEntityHandle_t hEntity, int attachmentIndex )
 {
 	VPROF_BUDGET( "MuzzleFlash_Combine_Player", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
-	CSmartPtr<CSimpleEmitter> pSimple = CSimpleEmitter::Create( "MuzzleFlash");
-	pSimple->SetDrawBeforeViewModel( true );
+	CSmartPtr<CLocalSpaceEmitter> pSimple = CLocalSpaceEmitter::Create( "MuzzleFlash", hEntity, attachmentIndex, FLE_VIEWMODEL );
+
 	CacheMuzzleFlashes();
 
 	SimpleParticle *pParticle;
-	
-	Vector origin, forward, up, right, offset;
-	QAngle angles;
+	Vector			forward(1,0,0), offset; //NOTENOTE: All coords are in local space
 
 	float flScale = random->RandomFloat( 2.0f, 2.25f );
 
-	C_BaseEntity* c = C_BaseEntity::Instance(hEntity);
-	angles = c->GetAbsAngles();
-	origin = c->GetAbsOrigin();
-		
-	pSimple->GetBinding().SetBBox( origin - Vector( 12, 12, 12 ), origin + Vector( 12, 12, 12 ) );
-	AngleVectors(angles, &forward, &right, &up);
-	
+	pSimple->SetDrawBeforeViewModel( true );
+
 	// Flash
 	for ( int i = 1; i < 6; i++ )
 	{
-		offset = origin + (forward * (i*8.0f*flScale)) + ( up * 3 );
+		offset = (forward * (i*8.0f*flScale));
 
 		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), m_Material_Combine_MuzzleFlash_Player[random->RandomInt(0,1)], offset );
 			
@@ -2576,7 +2565,7 @@ void CTempEnts::MuzzleFlash_Combine_Player( ClientEntityHandle_t hEntity, int at
 	}
 
 	// Tack on the smoke
-	pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), m_Material_Combine_MuzzleFlash_Player[random->RandomInt(0,1)], origin + forward*5 );
+	pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), m_Material_Combine_MuzzleFlash_Player[random->RandomInt(0,1)], vec3_origin );
 		
 	if ( pParticle == NULL )
 		return;
@@ -2834,30 +2823,22 @@ void CTempEnts::MuzzleFlash_SMG1_NPC( ClientEntityHandle_t hEntity, int attachme
 void CTempEnts::MuzzleFlash_SMG1_Player( ClientEntityHandle_t hEntity, int attachmentIndex )
 {
 	VPROF_BUDGET( "MuzzleFlash_SMG1_Player", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
-	CSmartPtr<CSimpleEmitter> pSimple = CSimpleEmitter::Create( "MuzzleFlash_SMG1_Player");
-	pSimple->SetDrawBeforeViewModel( true );
+	CSmartPtr<CLocalSpaceEmitter> pSimple = CLocalSpaceEmitter::Create( "MuzzleFlash_SMG1_Player", hEntity, attachmentIndex, FLE_VIEWMODEL );
 
 	CacheMuzzleFlashes();
 
-	Vector origin, forward, up, right, offset;
-	QAngle angles;
-
-	C_BaseEntity* c = C_BaseEntity::Instance(hEntity);
-	angles = c->GetAbsAngles();
-	origin = c->GetAbsOrigin();
-	
-	pSimple->GetBinding().SetBBox( origin - Vector( 4, 4, 4 ), origin + Vector( 4, 4, 4 ) );
-
-	AngleVectors(angles, &forward, &right, &up);
 	SimpleParticle *pParticle;
+	Vector			forward(1,0,0), offset; //NOTENOTE: All coords are in local space
 
 	float flScale = random->RandomFloat( 1.25f, 1.5f );
-			
+
+	pSimple->SetDrawBeforeViewModel( true );
+
 	// Flash
 	for ( int i = 1; i < 6; i++ )
 	{
-		offset = origin + (forward * (6 + i*8.0f*flScale)) + up * 4.5; //some adjustments to get back to muzzle
-		
+		offset = (forward * (i*8.0f*flScale));
+
 		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), m_Material_MuzzleFlash_Player[random->RandomInt(0,3)], offset );
 			
 		if ( pParticle == NULL )
@@ -2898,17 +2879,16 @@ void CTempEnts::MuzzleFlash_Shotgun_Player( ClientEntityHandle_t hEntity, int at
 
 	Vector origin;
 	QAngle angles;
-		
-	C_BaseEntity* c = C_BaseEntity::Instance(hEntity);
-	angles = c->GetAbsAngles();
-	origin = c->GetAbsOrigin();
-	
+
+	// Get our attachment's transformation matrix
+	FX_GetAttachmentTransform( hEntity, attachmentIndex, &origin, &angles );
+
 	pSimple->GetBinding().SetBBox( origin - Vector( 4, 4, 4 ), origin + Vector( 4, 4, 4 ) );
 
-	Vector forward, right, up;
-	AngleVectors( angles, &forward, &right, &up );
+	Vector forward;
+	AngleVectors( angles, &forward, NULL, NULL );
 
-	SimpleParticle *pParticle; 
+	SimpleParticle *pParticle;
 	Vector offset;
 
 	float flScale = random->RandomFloat( 1.25f, 1.5f );
@@ -2916,7 +2896,7 @@ void CTempEnts::MuzzleFlash_Shotgun_Player( ClientEntityHandle_t hEntity, int at
 	// Flash
 	for ( int i = 1; i < 6; i++ )
 	{
-		offset = origin + (forward * (30.f + i*8.0f*flScale)) + up*4.f;
+		offset = origin + (forward * (i*8.0f*flScale));
 
 		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), m_Material_MuzzleFlash_Player[random->RandomInt(0,3)], offset );
 			
@@ -3070,23 +3050,22 @@ void CTempEnts::MuzzleFlash_357_Player( ClientEntityHandle_t hEntity, int attach
 
 	CacheMuzzleFlashes();
 
-	Vector origin, right, up;
+	Vector origin;
 	QAngle angles;
 
-	C_BaseEntity* c = C_BaseEntity::Instance(hEntity);
-	angles = c->GetAbsAngles();
-	origin = c->GetAbsOrigin();
-	
+	// Get our attachment's transformation matrix
+	FX_GetAttachmentTransform( hEntity, attachmentIndex, &origin, &angles );
+
 	pSimple->GetBinding().SetBBox( origin - Vector( 4, 4, 4 ), origin + Vector( 4, 4, 4 ) );
 
 	Vector forward;
-	AngleVectors( angles, &forward, &right, &up );
+	AngleVectors( angles, &forward, NULL, NULL );
 
 	SimpleParticle *pParticle;
 	Vector			offset;
 
 	// Smoke
-	offset = origin + forward * 8.0f + up * 4.f;
+	offset = origin + forward * 8.0f;
 
 	pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), g_Mat_DustPuff[0], offset );
 		
@@ -3118,7 +3097,7 @@ void CTempEnts::MuzzleFlash_357_Player( ClientEntityHandle_t hEntity, int attach
 	// Flash
 	for ( int i = 1; i < 6; i++ )
 	{
-		offset = origin + (forward * (i*8.0f*flScale)) + up*5.f;
+		offset = origin + (forward * (i*8.0f*flScale));
 
 		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), m_Material_MuzzleFlash_Player[random->RandomInt(0,3)], offset );
 			
@@ -3157,23 +3136,22 @@ void CTempEnts::MuzzleFlash_Pistol_Player( ClientEntityHandle_t hEntity, int att
 
 	CacheMuzzleFlashes();
 
-	Vector origin, up, right;
+	Vector origin;
 	QAngle angles;
 
-	C_BaseEntity* c = C_BaseEntity::Instance(hEntity);
-	angles = c->GetAbsAngles();
-	origin = c->GetAbsOrigin();
-	
+	// Get our attachment's transformation matrix
+	FX_GetAttachmentTransform( hEntity, attachmentIndex, &origin, &angles );
+
 	pSimple->GetBinding().SetBBox( origin - Vector( 4, 4, 4 ), origin + Vector( 4, 4, 4 ) );
 
-	Vector forward;
+	Vector forward, right, up;
 	AngleVectors( angles, &forward, &right, &up );
 
 	SimpleParticle *pParticle;
 	Vector			offset;
 
 	// Smoke
-	offset = origin + forward * 8.0f + up * 5.0f;
+	offset = origin + forward * 8.0f;
 
 	if ( random->RandomInt( 0, 3 ) != 0 )
 	{
@@ -3208,7 +3186,7 @@ void CTempEnts::MuzzleFlash_Pistol_Player( ClientEntityHandle_t hEntity, int att
 	// Flash
 	for ( int i = 1; i < 6; i++ )
 	{
-		offset = origin + (forward * (i*4.0f*flScale)) + up * 5.f;
+		offset = origin + (forward * (i*4.0f*flScale));
 
 		pParticle = (SimpleParticle *) pSimple->AddParticle( sizeof( SimpleParticle ), m_Material_MuzzleFlash_Player[random->RandomInt(0,3)], offset );
 			
@@ -3233,12 +3211,16 @@ void CTempEnts::MuzzleFlash_Pistol_Player( ClientEntityHandle_t hEntity, int att
 		pParticle->m_flRollDelta	= 0.0f;
 	}
 
-	
 	// adding some brass...
 	QAngle shellAngle;
 	right.z += .25; // up the angle a touch...
 	VectorAngles(right, shellAngle);
+
+	// todo: get the attachment
+
 	EjectBrass( origin + forward*7.5f + up*4.f, shellAngle, angles, 0 );
+
+
 }
 
 //==================================================

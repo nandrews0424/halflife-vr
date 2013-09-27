@@ -173,6 +173,7 @@ CWeaponPistol::CWeaponPistol( void )
 void CWeaponPistol::Precache( void )
 {
 	PrecacheParticleSystem( "weapon_muzzle_smoke_long" );
+	PrecacheParticleSystem( "weapon_muzzle_smoke" );
 	BaseClass::Precache();
 }
 
@@ -234,13 +235,16 @@ void CWeaponPistol::PrimaryAttack( void )
 	{
 		m_nNumShotsFired++;
 	}
-		
+	
 	m_flLastAttackTime = gpGlobals->curtime;
 	m_flSoonestPrimaryAttack = gpGlobals->curtime + PISTOL_FASTEST_REFIRE_TIME;
 	CSoundEnt::InsertSound( SOUND_COMBAT, GetAbsOrigin(), SOUNDENT_VOLUME_PISTOL, 0.2, GetOwner() );
 
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 
+	
+
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+	
 	if( pOwner )
 	{
 		// Each time the player fires the pistol, reset the view punch. This prevents
@@ -250,9 +254,9 @@ void CWeaponPistol::PrimaryAttack( void )
 		pOwner->ViewPunchReset();
 
 		// temporarily disabled till I can sort this out....
-		if ( false && m_nNumShotsFired >= 5 )
+		if ( m_nNumShotsFired >= 5 )
 		{
-			DispatchParticleEffect("weapon_muzzle_smoke_long", PATTACH_POINT_FOLLOW, pOwner->GetViewModel(), "muzzle", true);
+			DispatchParticleEffect("weapon_muzzle_smoke", PATTACH_POINT_FOLLOW, pOwner->GetViewModel(), "muzzle", true);
 		}
 	}
 

@@ -178,13 +178,37 @@ void CBaseViewModel::SpawnControlPanels()
 		if (!pScreenName)
 			return;
 		
+
+
+		// my approach..
+
+		/*
+
+			Get LL 
+			Get UR
+
+			Get the distance between the positions
+			width = 
+
+
+
+		*/
+
+
+
+
+
+
+
 		// Compute the screen size from the attachment points...
 		matrix3x4_t	panelToWorld;
 		matrix3x4_t	worldToPanel;
+		pEntityToSpawnOn->GetAttachment( nLLAttachmentIndex, panelToWorld );
 		MatrixInvert( panelToWorld, worldToPanel );
 
 		// Now get the lower right position + transform into panel space
 		Vector lr, lrlocal;
+		pEntityToSpawnOn->GetAttachment( nURAttachmentIndex, panelToWorld );
 		MatrixGetColumn( panelToWorld, 3, lr );
 		VectorTransform( lr, worldToPanel, lrlocal );
 		
@@ -192,6 +216,8 @@ void CBaseViewModel::SpawnControlPanels()
 		float flHeight = lrlocal.y;
 
 		CVGuiScreen *pScreen = CreateVGuiScreen( "vgui_screen", pScreenName, pEntityToSpawnOn, this, nLLAttachmentIndex );
+
+		Msg("Creating VM VGUI Screen %s on ll-attachment %i (ur-attachment %i) w: %.1f h: %.1f \n", pScreenName, nLLAttachmentIndex, nURAttachmentIndex, lrlocal.x, lrlocal.y); 
 
 		pScreen->ChangeTeam( GetTeamNumber() );
 		pScreen->SetActualSize( flWidth, flHeight );

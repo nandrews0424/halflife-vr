@@ -11,6 +11,8 @@
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/Label.h>
 #include "clientmode_hlnormal.h"
+#include "c_basehlplayer.h"
+#include "usermessages.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -29,45 +31,99 @@ public:
     CHealthScreen( vgui::Panel *parent, const char *panelName );
 
     virtual bool Init( KeyValues* pKeyValues, VGuiScreenInitData_t* pInitData );
-    virtual void OnTick();
+	virtual void ApplySchemeSettings( vgui::IScheme *scheme );
+    virtual bool ShouldPaint();
+	virtual void Paint();
+	void		 MsgFunc_Battery(bf_read &msg );
 
 private:
-    vgui::Label *m_pHealth;
+    int				m_iSuitPower;
+	int				m_iHealth;
+	
+	vgui::Label		*m_pHealth;
+	vgui::Label		*m_pHealthLabel;
+	vgui::Label		*m_pSuit;
+	vgui::Label		*m_pSuitLabel;
+
+	vgui::HFont		m_hNumberFont;
+	vgui::HFont		m_hTextFont;
+	Color			m_clrText;
 };
+
 
 DECLARE_VGUI_SCREEN_FACTORY( CHealthScreen, "health_screen" );
 
 CHealthScreen::CHealthScreen( vgui::Panel *parent, const char *panelName )
     : BaseClass( parent, panelName, g_hVGuiCombineScheme ) { }
 
+
+void CHealthScreen::ApplySchemeSettings( IScheme *scheme ) {}
+
 bool CHealthScreen::Init( KeyValues* pKeyValues, VGuiScreenInitData_t* pInitData )
 {
-    // Load all of the controls in
     if ( !BaseClass::Init(pKeyValues, pInitData) )
         return false;
 
     // Make sure we get ticked...
-    vgui::ivgui()->AddTickSignal( GetVPanel() );
-    
-    m_pHealth =  dynamic_cast<vgui::Label*>(FindChildByName( "HealthReadout" ));
+    // vgui::ivgui()->AddTickSignal( GetVPanel() );
+	
+	m_pHealth		=  dynamic_cast<vgui::Label*>(FindChildByName( "HealthReadout" ));
+	m_pHealthLabel	=  dynamic_cast<vgui::Label*>(FindChildByName( "HealthLabel" ));
+	m_pSuit			=  dynamic_cast<vgui::Label*>(FindChildByName( "SuitReadout" ));
+	m_pSuitLabel	=  dynamic_cast<vgui::Label*>(FindChildByName( "SuitLabel" ));
+	
+	vgui::IScheme* scheme = vgui::scheme()->GetIScheme( vgui::scheme()->GetScheme( "ClientScheme" ) );
 
+	m_hNumberFont = scheme->GetFont("VrHudNumbers");
+	m_hTextFont = scheme->GetFont( "DefaultVerySmall" );
+	m_clrText = scheme->GetColor( "FgColor", Color(255,220,0, 180) );
+	
     return true;
 }
 
-
-void CHealthScreen::OnTick()
+bool CHealthScreen::ShouldPaint()
 {
-    BaseClass::OnTick();
+	C_BaseHLPlayer *pPlayer = (C_BaseHLPlayer *)C_BasePlayer::GetLocalPlayer();
+	if ( !pPlayer )
+		return false;
 
+	return pPlayer->GetHealth() != m_iHealth || pPlayer->GetSuitArmor() != m_iSuitPower;
+}
+
+void CHealthScreen::Paint()
+{
+	m_pHealth->SetFont(m_hNumberFont);
+	m_pSuit->SetFont(m_hNumberFont);
+	m_pHealthLabel->SetFont(m_hTextFont);
+	m_pSuitLabel->SetFont(m_hTextFont);
+	m_pHealthLabel->SetFgColor(m_clrText);
+	m_pSuitLabel->SetFgColor(m_clrText);	
+
+	// 
+	surface()->DrawSetAlphaMultiplier(.8);  // this might need to be on click
+	
 	// Get our player
-    CBasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
-    if ( !pPlayer )
+	C_BaseHLPlayer *pPlayer = dynamic_cast<C_BaseHLPlayer*>( C_BasePlayer::GetLocalPlayer() );
+    
+	if ( !pPlayer )
         return;
+	
+	char buf[32];
+	m_iHealth = pPlayer->GetHealth();
+	m_iSuitPower = pPlayer->GetSuitArmor();
 	
     if ( m_pHealth )
     {
-        char buf[32];
-        Q_snprintf( buf, sizeof( buf ), "%d", pPlayer->GetHealth() ); //todo: actual health plz
-        m_pHealth->SetText( buf );
+	    Q_snprintf( buf, sizeof( buf ), "%i", m_iHealth );
+		m_pHealth->SetFgColor(m_clrText);
+		m_pHealth->SetText( buf );
     }
+
+	if ( m_pSuit )
+	{
+        Q_snprintf( buf, sizeof( buf ), "%i", m_iSuitPower ); 
+		m_pSuit->SetFgColor(m_clrText);
+		m_pSuit->SetText( buf );
+	} 
 }
+

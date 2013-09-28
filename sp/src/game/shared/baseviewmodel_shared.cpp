@@ -178,28 +178,6 @@ void CBaseViewModel::SpawnControlPanels()
 		if (!pScreenName)
 			return;
 		
-
-
-		// my approach..
-
-		/*
-
-			Get LL 
-			Get UR
-
-			Get the distance between the positions
-			width = 
-
-
-
-		*/
-
-
-
-
-
-
-
 		// Compute the screen size from the attachment points...
 		matrix3x4_t	panelToWorld;
 		matrix3x4_t	worldToPanel;
@@ -216,14 +194,25 @@ void CBaseViewModel::SpawnControlPanels()
 		float flHeight = lrlocal.y;
 
 		CVGuiScreen *pScreen = CreateVGuiScreen( "vgui_screen", pScreenName, pEntityToSpawnOn, this, nLLAttachmentIndex );
-
+				
+		if (flWidth <= 0) {
+			Msg("No width for %s \n", pScreenName);
+			flWidth = 6;
+		}
+		if (flHeight <= 0) {
+			Msg("No height for %s \n", pScreenName);
+			flHeight = 10;
+		}		
+		
 		Msg("Creating VM VGUI Screen %s on ll-attachment %i (ur-attachment %i) w: %.1f h: %.1f \n", pScreenName, nLLAttachmentIndex, nURAttachmentIndex, lrlocal.x, lrlocal.y); 
 
 		pScreen->ChangeTeam( GetTeamNumber() );
 		pScreen->SetActualSize( flWidth, flHeight );
-		pScreen->SetActive( true );
+		pScreen->SetActive( false );
 		pScreen->MakeVisibleOnlyToTeammates( false );
 		pScreen->SetAttachedToViewModel( true );
+		pScreen->SetTransparency( true );
+		pScreen->SetActive( true );
 		int nScreen = m_hScreens.AddToTail( );
 		m_hScreens[nScreen].Set( pScreen );
 	}

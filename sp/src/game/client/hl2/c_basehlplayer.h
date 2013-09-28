@@ -15,6 +15,7 @@
 
 #include "c_baseplayer.h"
 #include "c_hl2_playerlocaldata.h"
+#include "usermessages.h"
 
 class C_BaseHLPlayer : public C_BasePlayer
 {
@@ -50,7 +51,10 @@ public:
 	void			PerformClientSideObstacleAvoidance( float flFrameTime, CUserCmd *pCmd );
 	void			PerformClientSideNPCSpeedModifiers( float flFrameTime, CUserCmd *pCmd );
 
-	bool				IsWeaponLowered( void ) { return m_HL2Local.m_bWeaponLowered; }
+	bool			IsWeaponLowered( void ) { return m_HL2Local.m_bWeaponLowered; }
+
+	int				GetSuitArmor() { return m_iSuitArmor; } // suit armor
+	void			SetSuitArmor(int val) { m_iSuitArmor = val; }
 
 public:
 
@@ -62,6 +66,8 @@ public:
 private:
 	C_BaseHLPlayer( const C_BaseHLPlayer & ); // not defined, not accessible
 	
+	int					m_iSuitArmor;
+
 	bool				TestMove( const Vector &pos, float fVertDist, float radius, const Vector &objPos, const Vector &objDir );
 
 	float				m_flZoomStart;

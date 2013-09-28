@@ -28,6 +28,9 @@
 #include "vgui_bitmappanel.h"
 #include "filesystem.h"
 #include "iinput.h"
+#include "view_shared.h" // CViewSetup
+#include "iviewrender.h" // view
+
 
 #include <vgui/IInputInternal.h>
 extern vgui::IInputInternal *g_InputInternal;
@@ -154,10 +157,30 @@ void FormatViewModelAttachment( Vector &vOrigin, bool bInverse );
 void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin, QAngle *pAngles )
 {
 	C_BaseEntity *pEnt = pAttachedTo->GetBaseEntity();
-
-	// todo: I can hijack and check the angles to adjust the opacity here
-	// m_PanelWrapper.GetPanel()->SetAlpha(122);
-
+	const char* panelName = PanelName();
+	vgui::Panel panel = m_PanelWrapper.GetPanel();
+	
+	if ( Q_strcmp(panelName, "health_screen") == 0 )
+	{
+		QAngle weapAngles = pEnt->GetAbsAngles();
+		Vector weapForward, weapRight, weapUp;
+		AngleVectors(weapAngles, &weapForward, &weapRight, &weapUp);
+		
+		float before = weapAngles.y;
+		
+		VMatrix worldFromPanel;
+		AngleMatrix(weapAngles, worldFromPanel.As3x4());
+		MatrixRotate(worldFromPanel, Vector(0, 0, 1), 180.f);
+		MatrixRotate(worldFromPanel, Vector(1, 0, 0), -90.f);
+		MatrixAngles(worldFromPanel.As3x4(), *pAngles);
+	
+		// move it right and over
+		*pOrigin = pEnt->GetAbsOrigin() + weapRight*1.75 + weapUp + weapForward*2.5;
+		return;
+	}
+	
+	//todo: set alpha per view ... m_PanelWrapper.GetPanel()->SetAlpha(200);
+	
 	if (pEnt && (m_nAttachmentIndex > 0))
 	{
 		{
@@ -174,6 +197,9 @@ void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin,
 	{
 		BaseClass::GetAimEntOrigin( pAttachedTo, pOrigin, pAngles );
 	}
+
+	// Msg("%s origin %.1f %.1f %.1f angles %.1f %.1f %.1f \n", PanelName(), pOrigin->x, pOrigin->y, pOrigin->z, pAngles->x, pAngles->y, pAngles->z);
+
 }
 
 //-----------------------------------------------------------------------------
@@ -590,11 +616,39 @@ int	C_VGuiScreen::DrawModel( int flags )
 	// FIXME: Can this be cached off?
 	ComputePanelToWorld();
 
+	/*if( m_fScreenFlags & VGUI_SCREEN_ATTACHED_TO_VIEWMODEL )
+	{
+		Msg("Rendering to view model \n ");
+
+		CMatRenderContextPtr pRenderContext( materials );
+		pRenderContext->MatrixMode( MATERIAL_PROJECTION );
+		pRenderContext->PushMatrix();
+		CViewSetup vmView( *view->GetPlayerViewSetup() );
+		vmView.zNear = vmView.zNearViewmodel;
+		vmView.zFar  = vmView.zFarViewmodel;
+		vmView.fov   = vmView.fovViewmodel;
+		render->Push3DView( vmView, 0, NULL, view->GetFrustum() );
+		pRenderContext->DepthRange( 0.0f, 0.1f );
+		pRenderContext.SafeRelease();
+	}*/
+	
+
 	g_pMatSystemSurface->DrawPanelIn3DSpace( pPanel->GetVPanel(), m_PanelToWorld, 
 		m_nPixelWidth, m_nPixelHeight, m_flWidth, m_flHeight );
 
 	// Finally, a pass to set the z buffer...
 	DrawScreenOverlay();
+
+	
+	/*if( m_fScreenFlags & VGUI_SCREEN_ATTACHED_TO_VIEWMODEL )
+	{
+		CMatRenderContextPtr pRenderContext( materials );
+		pRenderContext->DepthRange( 0.0, 1.0 );
+		render->PopView( view->GetFrustum() );
+		pRenderContext->MatrixMode( MATERIAL_PROJECTION );
+		pRenderContext->PopMatrix();
+		pRenderContext.SafeRelease();
+	}*/
 
 	return 1;
 }

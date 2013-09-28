@@ -16,6 +16,19 @@
 #include "vgui_controls/Label.h"
 #include "ienginevgui.h"
 #include "vgui_controls/ImagePanel.h"
+#include "c_basehlplayer.h"
+#include "usermessages.h"
+
+
+// user message handler func for suit power so it's available to the client, no idea why this wasn't already there....
+void __MsgFunc_CLocalPlayer_Battery(bf_read &msg) 
+{						
+	C_BaseHLPlayer *pPlayer = dynamic_cast<C_BaseHLPlayer*>( C_BasePlayer::GetLocalPlayer() );
+	if ( pPlayer )
+	{
+		pPlayer->SetSuitArmor(Clamp(msg.ReadShort(), 0, 100));
+	}
+}
 
 
 using sixenseMath::Vector2;
@@ -105,9 +118,10 @@ MotionTracker::MotionTracker()
 	sixenseInitialize();
 
 	PositionMatrix(Vector(-1, 0, -11.5), _eyesToTorsoTracker);
-
-
+	
 	_controlMode = (MotionControlMode_t) mt_control_mode.GetInt();
+
+	usermessages->HookMessage("Battery", __MsgFunc_CLocalPlayer_Battery ); // while this has nothing really to do with this code, it's VR only
 } 
 
 MotionTracker::~MotionTracker()

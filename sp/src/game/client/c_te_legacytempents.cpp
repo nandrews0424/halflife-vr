@@ -3213,13 +3213,16 @@ void CTempEnts::MuzzleFlash_Pistol_Player( ClientEntityHandle_t hEntity, int att
 
 	// adding some brass...
 	QAngle shellAngle;
-	right.z += .25; // up the angle a touch...
-	VectorAngles(right, shellAngle);
+		
+	up.z += .25; // up the angle a touch...
+	VectorAngles(up, shellAngle);
 
 	// todo: get the attachment
+	Vector ejectionOrigin;
+	QAngle tmp;
+	FX_GetAttachmentTransform( hEntity, 2, &ejectionOrigin, &tmp );
 
-	EjectBrass( origin + forward*7.5f + up*4.f, shellAngle, angles, 0 );
-
+	EjectBrass( ejectionOrigin, shellAngle, angles, 0 );
 
 }
 

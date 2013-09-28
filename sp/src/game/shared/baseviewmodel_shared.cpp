@@ -178,6 +178,28 @@ void CBaseViewModel::SpawnControlPanels()
 		if (!pScreenName)
 			return;
 		
+
+
+		// my approach..
+
+		/*
+
+			Get LL 
+			Get UR
+
+			Get the distance between the positions
+			width = 
+
+
+
+		*/
+
+
+
+
+
+
+
 		// Compute the screen size from the attachment points...
 		matrix3x4_t	panelToWorld;
 		matrix3x4_t	worldToPanel;

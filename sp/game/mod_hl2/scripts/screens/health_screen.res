@@ -4,8 +4,8 @@
     {
         "ControlName"   "Label"
         "fieldName"     "HealthReadout"
-        "xpos"          "20"
-        "ypos"          "20"
+        "xpos"          "70"
+        "ypos"          "110"
         "wide"          "120"
         "tall"          "72"
         "autoResize"    "0"
@@ -14,7 +14,7 @@
         "enabled"       "1"
         "tabPosition"   "0"
         "labelText"     "0"
-        "textAlignment" "left"
+        "textAlignment" "center"
         "dulltext"      "0"
         "paintBackground" "0"
     }
@@ -23,8 +23,8 @@
     {
         "ControlName"   "Label"
         "fieldName"     "HealthLabel"
-        "xpos"          "24"
-        "ypos"          "100"
+        "xpos"          "70"
+        "ypos"          "190"
         "wide"          "120"
         "tall"          "40"
         "autoResize"    "0"
@@ -33,7 +33,7 @@
         "enabled"       "1"
         "tabPosition"   "0"
         "labelText"     "HEALTH"
-        "textAlignment" "left"
+        "textAlignment" "center"
         "dulltext"      "0"
         "paintBackground" "0"
     }
@@ -42,8 +42,8 @@
     {
         "ControlName"   "Label"
         "fieldName"     "SuitReadout"
-        "xpos"          "20"
-        "ypos"          "160"
+        "xpos"          "200"
+        "ypos"          "110"
         "wide"          "120"
         "tall"          "72"
         "autoResize"    "0"
@@ -52,7 +52,7 @@
         "enabled"       "1"
         "tabPosition"   "0"
         "labelText"     "0"
-        "textAlignment" "left"
+        "textAlignment" "center"
         "dulltext"      "0"
         "paintBackground" "0"
     }
@@ -61,8 +61,8 @@
     {
         "ControlName"   "Label"
         "fieldName"     "SuitLabel"
-        "xpos"          "24"
-        "ypos"          "240"
+        "xpos"          "200"
+        "ypos"          "190"
         "wide"          "120"
         "tall"          "40"
         "autoResize"    "0"
@@ -71,7 +71,7 @@
         "enabled"       "1"
         "tabPosition"   "0"
         "labelText"     "SUIT"
-        "textAlignment" "left"
+        "textAlignment" "center"
         "dulltext"      "0"
         "paintBackground" "0"
     }

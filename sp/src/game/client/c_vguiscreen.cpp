@@ -175,7 +175,7 @@ void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin,
 		MatrixAngles(worldFromPanel.As3x4(), *pAngles);
 	
 		// move it right and over
-		*pOrigin = pEnt->GetAbsOrigin() + weapRight*1.75 + weapUp + weapForward*2.5;
+		*pOrigin = pEnt->GetAbsOrigin() + weapRight*1.75 + weapUp*2.3 + weapForward*5;
 		
 		return;
 	}

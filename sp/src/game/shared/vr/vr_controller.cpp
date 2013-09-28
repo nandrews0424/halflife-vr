@@ -634,9 +634,9 @@ bool MotionTracker::writeDebug() {
 }
 
 
-float MotionTracker::getHudPanelAlpha(const Vector& hudPanelForward, const Vector& eyesForward)
+float MotionTracker::getHudPanelAlpha(const Vector& hudPanelForward, const Vector& eyesForward, float fadePow)
 {
 	float dot = hudPanelForward.Dot(eyesForward);
 	if ( dot > 0 ) return 0.f;
-	return pow(fabs(dot), 2.5f);
+	return pow(fabs(dot), fadePow);
 }

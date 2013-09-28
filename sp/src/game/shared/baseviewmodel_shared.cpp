@@ -145,7 +145,22 @@ void CBaseViewModel::SpawnControlPanels()
 	char *pAttachmentNameUR = pOrgUR;
 	
 	Assert( pEntityToSpawnOn );
-		
+
+	// just attache the health_screen for now
+	CVGuiScreen *pScreen = CreateVGuiScreen( "vgui_screen", "health_screen", pEntityToSpawnOn, this, 0);
+			
+	pScreen->ChangeTeam( GetTeamNumber() );
+	pScreen->SetActualSize( 6.f, 4.5 );
+	pScreen->SetActive( false );
+	pScreen->MakeVisibleOnlyToTeammates( false );
+	pScreen->SetAttachedToViewModel( true );
+	pScreen->SetTransparency( true );
+	pScreen->SetActive( true );
+	int nScreen = m_hScreens.AddToTail( );
+	m_hScreens[nScreen].Set( pScreen );
+
+	return;
+
 	// Lookup the attachment point...
 
 	int nPanel;
@@ -193,19 +208,17 @@ void CBaseViewModel::SpawnControlPanels()
 		float flWidth = lrlocal.x;
 		float flHeight = lrlocal.y;
 
-		CVGuiScreen *pScreen = CreateVGuiScreen( "vgui_screen", pScreenName, pEntityToSpawnOn, this, nLLAttachmentIndex );
-				
 		if (flWidth <= 0) {
 			Msg("No width for %s \n", pScreenName);
 			flWidth = 6;
 		}
 		if (flHeight <= 0) {
 			Msg("No height for %s \n", pScreenName);
-			flHeight = 10;
+			flHeight = 20;
 		}		
+	
+		CVGuiScreen *pScreen = CreateVGuiScreen( "vgui_screen", pScreenName, pEntityToSpawnOn, this, nLLAttachmentIndex );
 		
-		Msg("Creating VM VGUI Screen %s on ll-attachment %i (ur-attachment %i) w: %.1f h: %.1f \n", pScreenName, nLLAttachmentIndex, nURAttachmentIndex, lrlocal.x, lrlocal.y); 
-
 		pScreen->ChangeTeam( GetTeamNumber() );
 		pScreen->SetActualSize( flWidth, flHeight );
 		pScreen->SetActive( false );

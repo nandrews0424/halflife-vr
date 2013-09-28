@@ -1040,30 +1040,25 @@ bool CClientVirtualReality::OverridePlayerMotion( float flInputSampleFrametime, 
 	case HMM_SHOOTFACE_MOVETORSO:
 		{
 			// The motion passed in is meant to be relative to the torso, so jimmy it to be relative to the new weapon aim.
-
-
-			QAngle torsoAngle, viewAngle;
-			MatrixAngles(worldFromTorso.As3x4(), torsoAngle); 
-			MatrixAngles(m_WorldFromMidEye.As3x4(), viewAngle);
-			torsoAngle.x = viewAngle.x;
-			torsoAngle.z = 0;
-
-			VMatrix newWorldFromTorso;
-			AngleMatrix(torsoAngle, newWorldFromTorso.As3x4());
-
-
-			QAngle weaponAngle;
-			VMatrix newWorldFromWeapon;
-			MatrixAngles(m_WorldFromWeapon.As3x4(), weaponAngle);
-			weaponAngle.x = 0;
-			weaponAngle.z = 0;
-			AngleMatrix(weaponAngle, newWorldFromWeapon.As3x4());
-
-			VMatrix torsoFromWorld = newWorldFromTorso.InverseTR();
-			VMatrix newTorsoFromWeapon = torsoFromWorld * newWorldFromWeapon;
-			newTorsoFromWeapon.SetTranslation ( Vector ( 0.0f, 0.0f, 0.0f ) );
 			
-			*pNewMotion = newTorsoFromWeapon * curMotion;
+			VMatrix torsoFromWorld = worldFromTorso.InverseTR(); 
+			QAngle weap,torso;
+			MatrixAngles(m_WorldFromWeapon.As3x4(), weap);
+			MatrixAngles(worldFromTorso.As3x4(), torso);
+
+			QAngle motionAngle;
+			VectorAngles(curMotion, motionAngle);
+			float dist = curMotion.Length();
+						
+			motionAngle.y += AngleDiff(weap.y, torso.y);
+			AngleVectors(motionAngle, pNewMotion);
+			*pNewMotion = *pNewMotion * dist;
+
+			// if the weapon is inverted, the movement will be applied incorrectly in engine
+			// as it was never possible to invert the view ( which is what the server processes the weapon angle as ) under normal play
+			if ( m_WorldFromWeapon.GetUp().Dot(Vector(0,0,1)) < 0 )
+				pNewMotion->y *= -1;
+			
 
 		}
 		break;
@@ -1341,7 +1336,7 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 			// this is mounted on the left side of the gun in game, so allow the alpha to be modulated for nice fade in effect...
 			VMatrix mWeap(m_WorldFromWeapon);
 			g_MotionTracker()->overrideWeaponMatrix(mWeap);
-			float alpha = g_MotionTracker()->getHudPanelAlpha(mWeap.GetLeft(), m_WorldFromMidEye.GetForward());
+			float alpha = g_MotionTracker()->getHudPanelAlpha(mWeap.GetLeft(), m_WorldFromMidEye.GetForward(), 2.5);
 			mymat->AlphaModulate(alpha);
 		}
 		else

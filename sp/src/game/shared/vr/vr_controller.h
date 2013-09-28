@@ -41,7 +41,7 @@ public:
 	void	updateSixenseButtons();											// checks sixense controller for buttons states and emulates keypress events...
 	void	getEyeToWeaponOffset(Vector& offset);
 
-	float	getHudPanelAlpha(const Vector& hudPanelForward, const Vector& eyesForward);
+	float	getHudPanelAlpha(const Vector& hudPanelForward, const Vector& eyesForward, float fadeFactor);
 
 
 protected:

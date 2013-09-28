@@ -56,20 +56,25 @@ private:
 DECLARE_VGUI_SCREEN_FACTORY( CHealthScreen, "health_screen" );
 
 CHealthScreen::CHealthScreen( vgui::Panel *parent, const char *panelName )
-    : BaseClass( parent, panelName, g_hVGuiCombineScheme ) { }
+    : BaseClass( parent, panelName, g_hVGuiCombineScheme ) 
+{
+ 	// SetScheme(vgui::scheme()->GetScheme( "ClientScheme" ));
+}
 
 
-void CHealthScreen::ApplySchemeSettings( IScheme *scheme ) {}
+void CHealthScreen::ApplySchemeSettings( IScheme *scheme ) 
+{
+	BaseClass::ApplySchemeSettings(scheme);
+	// SetBgColor(Color(0,0,0,100));
+	SetProportional(false);
+}
 
 bool CHealthScreen::Init( KeyValues* pKeyValues, VGuiScreenInitData_t* pInitData )
 {
     if ( !BaseClass::Init(pKeyValues, pInitData) )
         return false;
 
-    // Make sure we get ticked...
-    // vgui::ivgui()->AddTickSignal( GetVPanel() );
-	
-	m_pHealth		=  dynamic_cast<vgui::Label*>(FindChildByName( "HealthReadout" ));
+    m_pHealth		=  dynamic_cast<vgui::Label*>(FindChildByName( "HealthReadout" ));
 	m_pHealthLabel	=  dynamic_cast<vgui::Label*>(FindChildByName( "HealthLabel" ));
 	m_pSuit			=  dynamic_cast<vgui::Label*>(FindChildByName( "SuitReadout" ));
 	m_pSuitLabel	=  dynamic_cast<vgui::Label*>(FindChildByName( "SuitLabel" ));
@@ -101,9 +106,6 @@ void CHealthScreen::Paint()
 	m_pHealthLabel->SetFgColor(m_clrText);
 	m_pSuitLabel->SetFgColor(m_clrText);	
 
-	// 
-	
-	
 	// Get our player
 	C_BaseHLPlayer *pPlayer = dynamic_cast<C_BaseHLPlayer*>( C_BasePlayer::GetLocalPlayer() );
     
@@ -129,13 +131,13 @@ void CHealthScreen::Paint()
 	} 
 
 	// VM attached panels should fade at off-angles
+
 	VMatrix m(g_ClientVirtualReality.GetWorldFromMidEye());
 	g_MotionTracker()->overrideWeaponMatrix(m);
 	Vector weapRight	= m.GetLeft() * -1;
 	Vector eyesForward	= g_ClientVirtualReality.GetWorldFromMidEye().GetForward();
 		
-	float alpha = g_MotionTracker()->getHudPanelAlpha(weapRight, eyesForward);
-	Msg("Panel alpha set to %.2f\n", alpha);
-	surface()->DrawSetAlphaMultiplier(alpha);  // this might need to be on click
+	float alpha = g_MotionTracker()->getHudPanelAlpha(weapRight, eyesForward, 3.5);
+	surface()->DrawSetAlphaMultiplier(alpha); 
+	SetAlpha(255*alpha);
 }
-

@@ -13,6 +13,8 @@
 #include "clientmode_hlnormal.h"
 #include "c_basehlplayer.h"
 #include "usermessages.h"
+#include "vr\vr_controller.h"
+#include "client_virtualreality.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -100,7 +102,7 @@ void CHealthScreen::Paint()
 	m_pSuitLabel->SetFgColor(m_clrText);	
 
 	// 
-	surface()->DrawSetAlphaMultiplier(.8);  // this might need to be on click
+	
 	
 	// Get our player
 	C_BaseHLPlayer *pPlayer = dynamic_cast<C_BaseHLPlayer*>( C_BasePlayer::GetLocalPlayer() );
@@ -125,5 +127,15 @@ void CHealthScreen::Paint()
 		m_pSuit->SetFgColor(m_clrText);
 		m_pSuit->SetText( buf );
 	} 
+
+	// VM attached panels should fade at off-angles
+	VMatrix m(g_ClientVirtualReality.GetWorldFromMidEye());
+	g_MotionTracker()->overrideWeaponMatrix(m);
+	Vector weapRight	= m.GetLeft() * -1;
+	Vector eyesForward	= g_ClientVirtualReality.GetWorldFromMidEye().GetForward();
+		
+	float alpha = g_MotionTracker()->getHudPanelAlpha(weapRight, eyesForward);
+	Msg("Panel alpha set to %.2f\n", alpha);
+	surface()->DrawSetAlphaMultiplier(alpha);  // this might need to be on click
 }
 

@@ -14,6 +14,7 @@
 #include "VGuiMatSurface/IMatSystemSurface.h"
 #include "view.h"
 #include "collisionutils.h"
+#include <vgui_controls/Controls.h>
 #include <vgui/IInput.h>
 #include <vgui/IPanel.h>
 #include <vgui/IVGui.h>
@@ -30,7 +31,8 @@
 #include "iinput.h"
 #include "view_shared.h" // CViewSetup
 #include "iviewrender.h" // view
-
+#include "client_virtualreality.h"
+#include "vr/vr_controller.h"
 
 #include <vgui/IInputInternal.h>
 extern vgui::IInputInternal *g_InputInternal;
@@ -159,14 +161,12 @@ void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin,
 	C_BaseEntity *pEnt = pAttachedTo->GetBaseEntity();
 	const char* panelName = PanelName();
 	vgui::Panel panel = m_PanelWrapper.GetPanel();
-	
+		
 	if ( Q_strcmp(panelName, "health_screen") == 0 )
 	{
 		QAngle weapAngles = pEnt->GetAbsAngles();
 		Vector weapForward, weapRight, weapUp;
 		AngleVectors(weapAngles, &weapForward, &weapRight, &weapUp);
-		
-		float before = weapAngles.y;
 		
 		VMatrix worldFromPanel;
 		AngleMatrix(weapAngles, worldFromPanel.As3x4());
@@ -176,6 +176,7 @@ void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin,
 	
 		// move it right and over
 		*pOrigin = pEnt->GetAbsOrigin() + weapRight*1.75 + weapUp + weapForward*2.5;
+		
 		return;
 	}
 	
@@ -597,7 +598,7 @@ int	C_VGuiScreen::DrawModel( int flags )
 	vgui::Panel *pPanel = m_PanelWrapper.GetPanel();
 	if (!pPanel || !IsActive())
 		return 0;
-	
+
 	// Don't bother drawing stuff not visible to me...
 	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 	if (!pLocalPlayer || !IsVisibleToTeam(pLocalPlayer->GetTeamNumber()) )

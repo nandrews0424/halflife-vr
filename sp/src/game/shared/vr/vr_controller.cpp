@@ -632,3 +632,11 @@ sixenseControllerData MotionTracker::getControllerData(sixenseUtils::IController
 bool MotionTracker::writeDebug() {
 	return (_counter % 60) == 0;
 }
+
+
+float MotionTracker::getHudPanelAlpha(const Vector& hudPanelForward, const Vector& eyesForward)
+{
+	float dot = hudPanelForward.Dot(eyesForward);
+	if ( dot > 0 ) return 0.f;
+	return pow(fabs(dot), 2.5f);
+}

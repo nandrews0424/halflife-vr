@@ -38,7 +38,6 @@
         "paintBackground" "0"
     }
 
-
     "SuitReadout"
     {
         "ControlName"   "Label"

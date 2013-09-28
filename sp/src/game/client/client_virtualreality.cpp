@@ -1338,31 +1338,10 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 		{
 			mymat = materials->FindMaterial( "vgui/inworldui", TEXTURE_GROUP_VGUI );
 
-
-			// this is in game, modulate the hud alpha based on angular difference between weapon and view yaw
-
+			// this is mounted on the left side of the gun in game, so allow the alpha to be modulated for nice fade in effect...
 			VMatrix mWeap(m_WorldFromWeapon);
 			g_MotionTracker()->overrideWeaponMatrix(mWeap);
-			
-			QAngle weapAngle, viewAngle;
-			MatrixAngles(mWeap.As3x4(), weapAngle);
-			MatrixAngles(m_WorldFromMidEye.As3x4(), viewAngle);
-			
-			// 0 - 90 is ideal
-			float alpha = 0;
-
-			
-			float diff = AngleDiff(weapAngle.y, viewAngle.y);
-
-			// wrap around 90
-			if ( diff > 120 && diff <= 220 )
-				diff = fabs(diff - 220);
-
-			if ( diff > 0 && diff <= 110 )
-			{	
-				alpha = (diff-20)/90.f;
-			}
-
+			float alpha = g_MotionTracker()->getHudPanelAlpha(mWeap.GetLeft(), m_WorldFromMidEye.GetForward());
 			mymat->AlphaModulate(alpha);
 		}
 		else

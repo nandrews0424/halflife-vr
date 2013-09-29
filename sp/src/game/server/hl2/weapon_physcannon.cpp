@@ -1199,8 +1199,9 @@ void PlayerPickupObject( CBasePlayer *pPlayer, CBaseEntity *pObject )
 // Physcannon
 //-----------------------------------------------------------------------------
 
-#define	NUM_BEAMS	4
-#define	NUM_SPRITES	6
+#define	NUM_BEAMS	6
+#define	NUM_SPRITES	9
+#define	END_SPRITES	3
 
 struct thrown_objects_t
 {
@@ -1360,7 +1361,7 @@ protected:
 
 	CHandle<CBeam>		m_hBeams[NUM_BEAMS];
 	CHandle<CSprite>	m_hGlowSprites[NUM_SPRITES];
-	CHandle<CSprite>	m_hEndSprites[2];
+	CHandle<CSprite>	m_hEndSprites[END_SPRITES];
 	float				m_flEndSpritesOverride[2];
 	CHandle<CSprite>	m_hCenterSprite;
 	CHandle<CSprite>	m_hBlastSprite;
@@ -3190,17 +3191,17 @@ void CWeaponPhysCannon::DoEffectIdle( void )
 	float flScaleFactor = SpriteScaleFactor();
 
 	// Flicker the end sprites
-	if ( ( m_hEndSprites[0] != NULL ) && ( m_hEndSprites[1] != NULL ) )
+	//Make the end points flicker as fast as possible
+	//FIXME: Make this a property of the CSprite class!
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
-		//Make the end points flicker as fast as possible
-		//FIXME: Make this a property of the CSprite class!
-		for ( int i = 0; i < 2; i++ )
+		if ( m_hEndSprites[i] != NULL ) 
 		{
 			m_hEndSprites[i]->SetBrightness( random->RandomInt( 200, 255 ) );
 			m_hEndSprites[i]->SetScale( random->RandomFloat( 0.1, 0.15 ) * flScaleFactor );
 		}
 	}
-
+	
 	// Flicker the glow sprites
 	for ( int i = 0; i < NUM_SPRITES; i++ )
 	{
@@ -3675,7 +3676,7 @@ void CWeaponPhysCannon::DestroyEffects( void )
 		}
 	}
 
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{
@@ -3723,7 +3724,7 @@ void CWeaponPhysCannon::StopEffects( bool stopSound )
 		}
 	}
 
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{
@@ -3766,8 +3767,8 @@ void CWeaponPhysCannon::StartEffects( void )
 			"fork2t",
 			"fork1t",
 			"fork2t",
-			"fork1t",
-			"fork2t",
+			"fork3t",
+			"fork3t",
 		};
 
 		m_hBeams[i] = CBeam::BeamCreate( 
@@ -3803,7 +3804,10 @@ void CWeaponPhysCannon::StartEffects( void )
 			"fork1t",
 			"fork2b",
 			"fork2m",
-			"fork2t"
+			"fork2t",
+			"fork3b",
+			"fork3m",
+			"fork3t"
 		};
 
 		m_hGlowSprites[i] = CSprite::SpriteCreate( 
@@ -3828,14 +3832,15 @@ void CWeaponPhysCannon::StartEffects( void )
 	}
 
 	//Create the endcap sprites
-	for ( i = 0; i < 2; i++ )
+	for ( i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] == NULL )
 		{
 			const char *attachNames[] = 
 			{
 				"fork1t",
-				"fork2t"
+				"fork2t",
+				"fork3t"
 			};
 
 			m_hEndSprites[i] = CSprite::SpriteCreate( 
@@ -3859,6 +3864,7 @@ void CWeaponPhysCannon::StartEffects( void )
 			GetAbsOrigin(), false );
 
 		m_hCenterSprite->SetAsTemporary();
+		m_hCenterSprite->SetAttachment( pOwner->GetViewModel(), 1 );
 		m_hCenterSprite->SetTransparency( kRenderTransAdd, 255, 255, 255, 255, kRenderFxNone );
 		m_hCenterSprite->SetBrightness( 255, 0.2f );
 		m_hCenterSprite->SetScale( 0.1f, 0.2f );
@@ -3896,7 +3902,7 @@ void CWeaponPhysCannon::DoEffectClosed( void )
 	}
 
 	// Turn off the end-caps
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{
@@ -3949,7 +3955,7 @@ void CWeaponPhysCannon::DoMegaEffectClosed( void )
 	}
 
 	// Turn off the end-caps
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{
@@ -3994,15 +4000,15 @@ void CWeaponPhysCannon::DoEffectReady( )
 	float flScaleFactor = SpriteScaleFactor();
 
 	//Turn on the center sprite
-	/*if ( m_hCenterSprite != NULL )
+	if ( m_hCenterSprite != NULL )
 	{
 		m_hCenterSprite->SetBrightness( 128, 0.2f );
 		m_hCenterSprite->SetScale( 0.15f, 0.2f );
 		m_hCenterSprite->TurnOn();
-	}*/
+	}
 
 	//Turn off the end-caps
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{
@@ -4020,20 +4026,20 @@ void CWeaponPhysCannon::DoEffectReady( )
 	}
 
 	//Turn on the glow sprites
-	/*for ( int i = 0; i < NUM_SPRITES; i++ )
+	for ( int i = 0; i < NUM_SPRITES; i++ )
 	{
 		if ( m_hGlowSprites[i] != NULL )
 		{
 			m_hGlowSprites[i]->TurnOn();
 			m_hGlowSprites[i]->SetBrightness( 32.0f, 0.2f );
 			m_hGlowSprites[i]->SetScale( 0.4f * flScaleFactor, 0.2f );
-		}*
-	}*/
+		}
+	}
 
 	//Scale down
 	if ( m_hBlastSprite != NULL )
 	{
-		// m_hBlastSprite->TurnOn();
+		m_hBlastSprite->TurnOn();
 		m_hBlastSprite->SetScale( 0.1f, 0.2f );
 		m_hBlastSprite->SetBrightness( 255, 0.1f );
 	}
@@ -4056,7 +4062,7 @@ void CWeaponPhysCannon::DoEffectHolding( )
 	}
 
 	// Turn off the end-caps
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{
@@ -4220,7 +4226,7 @@ void CWeaponPhysCannon::DoMegaEffectHolding( void )
 	}
 
 	// Turn off the end-caps
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{
@@ -4265,7 +4271,7 @@ void CWeaponPhysCannon::DoMegaEffectReady( void )
 	}
 
 	//Turn off the end-caps
-	for ( int i = 0; i < 2; i++ )
+	for ( int i = 0; i < END_SPRITES; i++ )
 	{
 		if ( m_hEndSprites[i] != NULL )
 		{

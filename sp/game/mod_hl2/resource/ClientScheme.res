@@ -365,6 +365,24 @@ Scheme
 				"custom"	"1"
 			}
 		}
+
+
+		VrHudNumbers
+		{
+			"1"
+			{
+				"name"		"HalfLife2"
+				"tall"		"64"
+				"weight"	"0"
+				"antialias" "1"
+				"additive"	"1"
+				"custom"	"1"
+			}
+		}
+
+
+
+
 		SquadIcon	[$X360]
 		{
 			"1"

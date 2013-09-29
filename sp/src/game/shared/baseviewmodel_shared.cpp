@@ -123,6 +123,7 @@ void CBaseViewModel::SetControlPanelsActive( bool bState )
 void CBaseViewModel::SpawnControlPanels()
 {
 #if defined( VGUI_CONTROL_PANELS )
+	
 	char buf[64];
 
 	// Destroy existing panels
@@ -131,84 +132,71 @@ void CBaseViewModel::SpawnControlPanels()
 	CBaseCombatWeapon *weapon = m_hWeapon.Get();
 
 	if ( weapon == NULL )
-	{
 		return;
-	}
 
 	MDLCACHE_CRITICAL_SECTION();
 
-	// FIXME: Deal with dynamically resizing control panels?
 
 	// If we're attached to an entity, spawn control panels on it instead of use
 	CBaseAnimating *pEntityToSpawnOn = this;
-	char *pOrgLL = "controlpanel%d_ll";
-	char *pOrgUR = "controlpanel%d_ur";
+	char *pOrgLL = "controlpanel_%d_ll";
+	char *pOrgUR = "controlpanel_%d_ur";
 	char *pAttachmentNameLL = pOrgLL;
 	char *pAttachmentNameUR = pOrgUR;
-	/*
-	if ( IsBuiltOnAttachment() )
-	{
-		pEntityToSpawnOn = dynamic_cast<CBaseAnimating*>((CBaseEntity*)m_hBuiltOnEntity.Get());
-		if ( pEntityToSpawnOn )
-		{
-			char sBuildPointLL[64];
-			char sBuildPointUR[64];
-			Q_snprintf( sBuildPointLL, sizeof( sBuildPointLL ), "bp%d_controlpanel%%d_ll", m_iBuiltOnPoint );
-			Q_snprintf( sBuildPointUR, sizeof( sBuildPointUR ), "bp%d_controlpanel%%d_ur", m_iBuiltOnPoint );
-			pAttachmentNameLL = sBuildPointLL;
-			pAttachmentNameUR = sBuildPointUR;
-		}
-		else
-		{
-			pEntityToSpawnOn = this;
-		}
-	}
-	*/
-
+	
 	Assert( pEntityToSpawnOn );
 
+	// just attache the health_screen for now
+	CVGuiScreen *pScreen = CreateVGuiScreen( "vgui_screen", "health_screen", pEntityToSpawnOn, this, 0);
+			
+	pScreen->ChangeTeam( GetTeamNumber() );
+	pScreen->SetActualSize( 6.f, 4.5 );
+	pScreen->SetActive( false );
+	pScreen->MakeVisibleOnlyToTeammates( false );
+	pScreen->SetAttachedToViewModel( true );
+	pScreen->SetTransparency( true );
+	pScreen->SetActive( true );
+	int nScreen = m_hScreens.AddToTail( );
+	m_hScreens[nScreen].Set( pScreen );
+
+	return;
+
 	// Lookup the attachment point...
+
 	int nPanel;
 	for ( nPanel = 0; true; ++nPanel )
 	{
 		Q_snprintf( buf, sizeof( buf ), pAttachmentNameLL, nPanel );
 		int nLLAttachmentIndex = pEntityToSpawnOn->LookupAttachment(buf);
-		if (nLLAttachmentIndex <= 0)
-		{
-			// Try and use my panels then
-			pEntityToSpawnOn = this;
-			Q_snprintf( buf, sizeof( buf ), pOrgLL, nPanel );
-			nLLAttachmentIndex = pEntityToSpawnOn->LookupAttachment(buf);
-			if (nLLAttachmentIndex <= 0)
-				return;
-		}
 
 		Q_snprintf( buf, sizeof( buf ), pAttachmentNameUR, nPanel );
 		int nURAttachmentIndex = pEntityToSpawnOn->LookupAttachment(buf);
+
+		if (nLLAttachmentIndex <= 0)
+			return;
+
 		if (nURAttachmentIndex <= 0)
-		{
-			// Try and use my panels then
-			Q_snprintf( buf, sizeof( buf ), pOrgUR, nPanel );
-			nURAttachmentIndex = pEntityToSpawnOn->LookupAttachment(buf);
-			if (nURAttachmentIndex <= 0)
-				return;
-		}
+			return;
 
 		const char *pScreenName;
-		weapon->GetControlPanelInfo( nPanel, pScreenName );
+		
+		switch(nPanel)
+		{
+			case 0:
+				pScreenName = "health_screen";
+				break;
+			case 1:
+				pScreenName = "ammo_screen";
+				break;
+		}
+
 		if (!pScreenName)
-			continue;
-
-		const char *pScreenClassname;
-		weapon->GetControlPanelClassName( nPanel, pScreenClassname );
-		if ( !pScreenClassname )
-			continue;
-
+			return;
+		
 		// Compute the screen size from the attachment points...
 		matrix3x4_t	panelToWorld;
-		pEntityToSpawnOn->GetAttachment( nLLAttachmentIndex, panelToWorld );
-
 		matrix3x4_t	worldToPanel;
+		pEntityToSpawnOn->GetAttachment( nLLAttachmentIndex, panelToWorld );
 		MatrixInvert( panelToWorld, worldToPanel );
 
 		// Now get the lower right position + transform into panel space
@@ -216,23 +204,32 @@ void CBaseViewModel::SpawnControlPanels()
 		pEntityToSpawnOn->GetAttachment( nURAttachmentIndex, panelToWorld );
 		MatrixGetColumn( panelToWorld, 3, lr );
 		VectorTransform( lr, worldToPanel, lrlocal );
-
+		
 		float flWidth = lrlocal.x;
 		float flHeight = lrlocal.y;
 
-		CVGuiScreen *pScreen = CreateVGuiScreen( pScreenClassname, pScreenName, pEntityToSpawnOn, this, nLLAttachmentIndex );
+		if (flWidth <= 0) {
+			Msg("No width for %s \n", pScreenName);
+			flWidth = 6;
+		}
+		if (flHeight <= 0) {
+			Msg("No height for %s \n", pScreenName);
+			flHeight = 20;
+		}		
+	
+		CVGuiScreen *pScreen = CreateVGuiScreen( "vgui_screen", pScreenName, pEntityToSpawnOn, this, nLLAttachmentIndex );
+		
 		pScreen->ChangeTeam( GetTeamNumber() );
 		pScreen->SetActualSize( flWidth, flHeight );
 		pScreen->SetActive( false );
 		pScreen->MakeVisibleOnlyToTeammates( false );
-	
-#ifdef INVASION_DLL
-		pScreen->SetOverlayMaterial( SCREEN_OVERLAY_MATERIAL );
-#endif
 		pScreen->SetAttachedToViewModel( true );
+		pScreen->SetTransparency( true );
+		pScreen->SetActive( true );
 		int nScreen = m_hScreens.AddToTail( );
 		m_hScreens[nScreen].Set( pScreen );
 	}
+
 #endif
 }
 
@@ -385,6 +382,7 @@ void CBaseViewModel::SendViewModelMatchingSequence( int sequence )
 
 void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePosition, const QAngle& eyeAngles )
 {
+
 	// UNDONE: Calc this on the server?  Disabled for now as it seems unnecessary to have this info on the server
 #if defined( CLIENT_DLL )
 	QAngle vmangoriginal = eyeAngles;
@@ -459,7 +457,6 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 	}
 #endif
 #endif
-
 }
 
 //-----------------------------------------------------------------------------

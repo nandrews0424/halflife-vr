@@ -117,6 +117,8 @@ MotionTracker::MotionTracker()
 
 	sixenseInitialize();
 
+	_rhandCalibration.Identity();
+
 	PositionMatrix(Vector(-1, 0, -11.5), _eyesToTorsoTracker);
 	
 	_controlMode = (MotionControlMode_t) mt_control_mode.GetInt();
@@ -168,7 +170,7 @@ matrix3x4_t MotionTracker::getTrackedTorso()
 	return getMatrixFromData(getControllerData(sixenseUtils::ControllerManager::P1L));
 }
 
-matrix3x4_t MotionTracker::getTrackedRightHand()
+matrix3x4_t MotionTracker::getTrackedRightHand(bool includeCalibration)
 {
 	return getMatrixFromData(getControllerData(sixenseUtils::ControllerManager::P1R));
 }
@@ -181,7 +183,6 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 	matrix3x4_t weaponMatrix	= getTrackedRightHand();
 	matrix3x4_t torsoMatrix		= getTrackedTorso();
 	
-	QAngle weaponAngle;
 	Vector weaponPos;
 
 	// get raw torso and weap positions, construct the distance from the diff of those two + the distance to the eyes from a properly calibrated torso tracker...
@@ -189,14 +190,15 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 	MatrixPosition(weaponMatrix, vWeapon);
 	MatrixPosition(_eyesToTorsoTracker, vEyes);
 	
-	Vector vEyesToWeapon = (vWeapon - _vecBaseToTorso)  + vEyes;  // was ( weapon - torso ) but since at this point the torso changes haven't been applied (get overridden in the view), that's unnecessary...
+	Vector vEyesToWeapon = (vWeapon - _vecBaseToTorso)  + vEyes;			// was ( weapon - torso ) but since at this point the torso changes haven't been applied (get overridden in the view), that's unnecessary...
+	
+	PositionMatrix(vEyesToWeapon, weaponMatrix);							// position is reset rather than distance to base to distance to torso tracker
+	
+	MatrixMultiply(_sixenseToWorld, weaponMatrix, weaponMatrix);			// project weapon matrix by the base engine yaw
+	MatrixPosition(weaponMatrix, weaponPos);								// get the angles back off
+	MatrixMultiply(_rhandCalibration.As3x4(), weaponMatrix, weaponMatrix);  // adjust the weapon angles per the calibration
+	MatrixAngles(weaponMatrix, vmangles);									// get the angles back off after applying the calibration
 		
-	PositionMatrix(vEyesToWeapon, weaponMatrix);						// position is reset rather than distance to base to distance to torso tracker
-	
-	MatrixMultiply(_sixenseToWorld, weaponMatrix, weaponMatrix);		// project weapon matrix by the base engine yaw
-	
-	MatrixAngles(weaponMatrix, weaponAngle, weaponPos);					// get the angles back off
-	VectorCopy(weaponAngle, vmangles);
 	vmorigin += weaponPos;
 }
 
@@ -342,9 +344,6 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 		return;	
 	}
 
-	Msg("Calibrating Motion Trackers...\n");
-
-	
 	QAngle engineTorsoAngles; 
 	MatrixToAngles(torsoMatrix, engineTorsoAngles);
 	_baseEngineYaw = engineTorsoAngles.y;
@@ -353,14 +352,20 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	// regardless of control mode, we snapshot the torso (lhand) tracker offset, the only change is how it's applied in the viewmodel offsets...
 	matrix3x4_t trackedTorso = getTrackedTorso();
 	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
-
-	// TODO: chest tracker offset is fixed for now but could easily be configured to treat right hand as eyes assuming within a threshold and recalibrate this value...
-	// would have to be optional because it's rather annoying to do just to realign
-	// PositionMatrix(Vector(0, 0, -8), _eyesToTorsoTracker);
 	
-	
-	Msg("Torso offset calibrated at \t: %.2f %.2f %2.f", _vecBaseToTorso.x, _vecBaseToTorso.y, _vecBaseToTorso.z); 
 
+	if ( false && gpGlobals->curtime < _lastCalibrated + .5 ) 
+	{
+		
+		Msg("Calibration double tapped, calibrating off current weapon angles \n");
+		_rhandCalibration = getTrackedRightHand(false);
+		_rhandCalibration.SetTranslation(Vector(0,0,0));
+		_rhandCalibration = _rhandCalibration.InverseTR();
+
+		// VR todo: if upside down, need to invert the z axis
+	}
+
+	_lastCalibrated = gpGlobals->curtime;
 	_calibrate = false;
 }
 

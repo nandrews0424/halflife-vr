@@ -65,7 +65,6 @@ CHealthScreen::CHealthScreen( vgui::Panel *parent, const char *panelName )
 void CHealthScreen::ApplySchemeSettings( IScheme *scheme ) 
 {
 	BaseClass::ApplySchemeSettings(scheme);
-	// SetBgColor(Color(0,0,0,100));
 	SetProportional(false);
 }
 

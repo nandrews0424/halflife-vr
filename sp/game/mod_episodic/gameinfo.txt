@@ -36,6 +36,11 @@
 			game					|all_source_engine_paths|episodic
 			game					|all_source_engine_paths|hl2
 			platform				|all_source_engine_paths|platform
+
+			// load ep2 for missing particles etc
+			game					|all_source_engine_paths|ep2/ep2_english.vpk
+			game					|all_source_engine_paths|ep2/ep2_pak.vpk
+			game					|all_source_engine_paths|episodic
 		}
 	}
 }

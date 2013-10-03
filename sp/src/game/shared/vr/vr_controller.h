@@ -45,12 +45,15 @@ public:
 
 
 protected:
-	bool _initialized;
-	bool _calibrate;
+	bool	_initialized;
+	bool	_calibrate;
+	float	_lastCalibrated;
 	
 	matrix3x4_t _sixenseToWorld;
 	matrix3x4_t _eyesToTorsoTracker;
 	matrix3x4_t	_torsoCalibration;
+	VMatrix		_rhandCalibration;
+	
 	Vector	_vecBaseToTorso;
 
 	float	_baseEngineYaw;
@@ -60,7 +63,7 @@ protected:
 	unsigned int _counter;
  
 	matrix3x4_t getTrackedTorso();
-	matrix3x4_t getTrackedRightHand();
+	matrix3x4_t getTrackedRightHand(bool includeCalibration=true);
 	void		calibrate(VMatrix& torsoMatrix);
 	bool		writeDebug();
 	

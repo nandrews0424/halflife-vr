@@ -85,47 +85,11 @@ ITexture *GetCameraTexture( void )
 //============================================================================
 // Scope Texture
 //============================================================================
-
-
-#ifdef HL2_EPISODIC
-
-// There is an issue with episodic not intializing custom render targets correctly,
-// this workaround ensures the scope render target is available here instead
-// may cause less than ideal frame hiccup 
-
-static ITexture* s_pScopeRenderTarget;
-static ITexture* GetScopeRenderTarget( IMaterialSystem* pMaterialSystem )
-{
-	if ( !s_pScopeRenderTarget )
-	{
-		pMaterialSystem->BeginRenderTargetAllocation();
-
-		s_pScopeRenderTarget = pMaterialSystem->CreateNamedRenderTargetTextureEx2(
-			"_rt_Scope",
-			1024, 1024, RT_SIZE_OFFSCREEN,
-			pMaterialSystem->GetBackBufferFormat(),
-			MATERIAL_RT_DEPTH_SHARED, 
-			TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT,
-			CREATERENDERTARGETFLAGS_HDR );
-
-		pMaterialSystem->EndRenderTargetAllocation();
-	}
-	return s_pScopeRenderTarget;
-}
-
-#endif
-
 static CTextureReference s_pScopeTexture;
 ITexture *GetScopeTexture( void )
 {
 	if ( !s_pScopeTexture )
 	{
-	
-#ifdef HL2_EPISODIC
-		// Render target properly initialized in tne_RenderTargets for normal HL2_CLIENT, this is a hack-around
-		GetScopeRenderTarget(materials);
-#endif
-		
 		s_pScopeTexture.Init(materials->FindTexture("_rt_Scope", TEXTURE_GROUP_RENDER_TARGET));
 		Assert(!IsErrorTexture(s_pScopeTexture));
 		AddReleaseFunc();
@@ -307,11 +271,6 @@ void ReleaseRenderTargets( void )
 	s_pQuarterSizedFB1.Shutdown();
 	s_pFullFrameDepthTexture.Shutdown();
 	s_pScopeTexture.Shutdown();
-
-#ifdef HL2_EPISODIC
-	if ( s_pScopeRenderTarget )
-		s_pScopeRenderTarget->Release();
-#endif
 
 	for (int i=0; i<MAX_FB_TEXTURES; ++i)
 		s_pFullFrameFrameBufferTexture[i].Shutdown();

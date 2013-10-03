@@ -110,7 +110,7 @@ void CHealthScreen::Paint()
     
 	if ( !pPlayer )
         return;
-	
+
 	char buf[32];
 	m_iHealth = pPlayer->GetHealth();
 	m_iSuitPower = pPlayer->GetSuitArmor();

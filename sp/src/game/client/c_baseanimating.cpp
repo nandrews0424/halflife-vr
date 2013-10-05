@@ -3321,11 +3321,11 @@ void C_BaseAnimating::ProcessMuzzleFlashEvent()
 			dlight_t *dl = effects->CL_AllocDlight ( index );
 			dl->origin = vAttachment;
 			dl->color.r = 255;
-			dl->color.g = 205;
-			dl->color.b = 80;
+			dl->color.g = 225;
+			dl->color.b = 112;
 			dl->m_Direction = weaponForward;
 			dl->die = gpGlobals->curtime + 0.05f;
-			dl->radius = random->RandomFloat( 192.0f, 224.0f );
+			dl->radius = random->RandomFloat( 220.0f, 248.0f );
 			dl->decay = 496;
 
 		}

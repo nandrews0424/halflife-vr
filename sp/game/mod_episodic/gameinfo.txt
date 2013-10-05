@@ -2,8 +2,8 @@
 {
 	
 	game 			"Half-Life VR: Episode One"
-	title 			"HALF-LIFE"
-	title2			"== episode one =="
+	title 			"HALF-LIFE'"
+	title2			"== episode one=="
 
 	
 	developer		"Nathan Andrews"

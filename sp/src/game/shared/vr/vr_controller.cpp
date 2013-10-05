@@ -624,6 +624,7 @@ sixenseControllerData MotionTracker::getControllerData(sixenseUtils::IController
 
 	if ( idx < 0 || idx > 1 )
 	{
+
 		idx = (int) which_controller;
 	}
 

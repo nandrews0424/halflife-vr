@@ -2,7 +2,7 @@
 {
 	gamelogo 1
 	game 			"Half-Life VR"
-	title 			"HALF-LIFE VR"
+	title 			"HALF-LIFE R"
 	title2			""
 
 	developer		"Nathan Andrews + Wormslayer"

@@ -5047,6 +5047,11 @@ void CBasePlayer::Spawn( void )
 	UpdateLastKnownArea();
 
 	m_weaponFiredTimer.Invalidate();
+
+	if ( m_laserCrosshair == NULL )
+	{
+		m_laserCrosshair = CLaserCrosshair::Create(GetAbsOrigin(), this, true);
+	}
 }
 
 void CBasePlayer::Activate( void )
@@ -9326,6 +9331,43 @@ void CBasePlayer::AdjustDrownDmg( int nAmount )
 		m_idrowndmg = m_idrownrestored;
 	}
 }
+
+
+// update based on the weapon info
+void CBasePlayer::UpdateLaserCrosshair( void )
+{
+	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
+	if ( pWeapon ) 
+	{
+		const FileWeaponInfo_t info = pWeapon->GetWpnData();
+		m_laserCrosshair->SetScale(info.laserCrosshairScale);
+		m_laserCrosshair->SetTransparency( kRenderGlow, info.laserCrosshairColor.r(), info.laserCrosshairColor.g(), info.laserCrosshairColor.b(), info.laserCrosshairColor.a(), kRenderFxNoDissipation );
+		m_laserCrosshair->TurnOn();
+	}
+	else
+	{
+		m_laserCrosshair->TurnOff();
+	}
+}
+
+void CBasePlayer::SetLaserCrosshairPosition( void )
+{
+	
+	CBaseViewModel* pViewModel = GetViewModel();
+	if ( !m_laserCrosshair || !pViewModel )
+		return;
+
+	Vector origin, forward, traceEnd;
+	pViewModel->GetAttachment("muzzle", origin, &forward);
+
+	origin = Weapon_ShootPosition(); 
+
+	traceEnd = origin + ( forward * MAX_TRACE_LENGTH );
+	trace_t	tr;
+	UTIL_TraceLine( origin, traceEnd, (MASK_SHOT & ~CONTENTS_WINDOW), this, COLLISION_GROUP_NONE, &tr );
+	m_laserCrosshair->SetLaserPosition( tr.endpos, tr.plane.normal );
+}
+
 
 
 

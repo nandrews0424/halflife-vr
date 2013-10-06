@@ -18,6 +18,7 @@
 #include "hintsystem.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 #include "util_shared.h"
+#include "laser_crosshair.h"
 
 #if defined USES_ECON_ITEMS
 #include "game_item_schema.h"
@@ -825,7 +826,9 @@ private:
 
 public:
 	
-
+	void				UpdateLaserCrosshair();			// called when the weapons change so laser color / opacity / size can be adjusted
+	void				SetLaserCrosshairPosition();	// called per frame so position can be set
+	
 
 	// Used by gamemovement to check if the entity is stuck.
 	int m_StuckLast;
@@ -1049,6 +1052,9 @@ private:
 
 	// player locking
 	int						m_iPlayerLocked;
+
+	
+
 		
 protected:
 	// the player's personal view model
@@ -1063,6 +1069,8 @@ protected:
 
 	bool					m_bAllowInstantSpawn;
 
+	CLaserCrosshair*			m_laserCrosshair;
+	
 #if defined USES_ECON_ITEMS
 	// Wearables
 	CUtlVector<CHandle<CEconWearable > >	m_hMyWearables;

@@ -37,7 +37,7 @@ CLaserCrosshair *CLaserCrosshair::Create( const Vector &origin, CBaseEntity *pOw
 	UTIL_SetSize( pLaserDot, vec3_origin, vec3_origin );
 
 	//Create the graphic
-	pLaserDot->SpriteInit( "sprites/redglow1.vmt", origin );
+	pLaserDot->SpriteInit( "sprites/redglow2.vmt", origin );
 
 	pLaserDot->SetName( AllocPooledString("TEST") );
 

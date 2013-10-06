@@ -34,7 +34,6 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 CHLMachineGun::CHLMachineGun( void )
 {
-	m_flLastAttackTime = 0;
 }
 
 const Vector &CHLMachineGun::GetBulletSpread( void )
@@ -86,9 +85,6 @@ void CHLMachineGun::PrimaryAttack( void )
 
 	m_iPrimaryAttacks++;
 	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
 
 	// Fire the bullets
 	FireBulletsInfo_t info;

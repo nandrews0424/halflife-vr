@@ -65,6 +65,7 @@ CHealthScreen::CHealthScreen( vgui::Panel *parent, const char *panelName )
 void CHealthScreen::ApplySchemeSettings( IScheme *scheme ) 
 {
 	BaseClass::ApplySchemeSettings(scheme);
+	// SetBgColor(Color(0,0,0,100));
 	SetProportional(false);
 }
 
@@ -110,7 +111,7 @@ void CHealthScreen::Paint()
     
 	if ( !pPlayer )
         return;
-
+	
 	char buf[32];
 	m_iHealth = pPlayer->GetHealth();
 	m_iSuitPower = pPlayer->GetSuitArmor();

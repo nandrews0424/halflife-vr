@@ -4269,12 +4269,11 @@ void CGameMovement::SetDuckedEyeOffset( float duckFraction )
 //          bInAir - is the player in air
 //    NOTE: Only crop player speed once.
 //-----------------------------------------------------------------------------
-
 void CGameMovement::HandleDuckingSpeedCrop( void )
 {
 	if ( !( m_iSpeedCropped & SPEED_CROPPED_DUCK ) && ( player->GetFlags() & FL_DUCKING ) && ( player->GetGroundEntity() != NULL ) )
 	{
-		float frac = 0.425;
+		float frac = 0.33333333f;
 		mv->m_flForwardMove	*= frac;
 		mv->m_flSideMove	*= frac;
 		mv->m_flUpMove		*= frac;

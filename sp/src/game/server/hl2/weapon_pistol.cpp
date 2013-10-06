@@ -172,7 +172,8 @@ CWeaponPistol::CWeaponPistol( void )
 //-----------------------------------------------------------------------------
 void CWeaponPistol::Precache( void )
 {
-	PrecacheParticleSystem( "weapon_muzzle_smoke_b" );
+	PrecacheParticleSystem( "weapon_muzzle_smoke_long" );
+	PrecacheParticleSystem( "weapon_muzzle_smoke" );
 	BaseClass::Precache();
 }
 
@@ -255,7 +256,7 @@ void CWeaponPistol::PrimaryAttack( void )
 		// temporarily disabled till I can sort this out....
 		if ( m_nNumShotsFired >= 5 )
 		{
-			DispatchParticleEffect("weapon_muzzle_smoke_b", PATTACH_POINT_FOLLOW, pOwner->GetViewModel(), "muzzle", true);
+			DispatchParticleEffect("weapon_muzzle_smoke", PATTACH_POINT_FOLLOW, pOwner->GetViewModel(), "muzzle", true);
 		}
 	}
 

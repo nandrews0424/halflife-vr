@@ -1,5 +1,5 @@
 !include "MUI2.nsh"
-!define VERSION '1.2.0'
+!define VERSION '1.1.0'
 
 Name "Half-Life VR"
 
@@ -38,9 +38,6 @@ Section ""
 
 	SetOutPath $INSTDIR\halflife-vr
 	File /r ..\mod_hl2\*
-	
-	SetOutPath $INSTDIR\halflife-vr-ep1
-	File /r ..\mod_episodic\*
 	
 	WriteUninstaller $INSTDIR\halflife-vr\Uninstall.exe
 

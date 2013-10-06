@@ -559,7 +559,6 @@ exit 1
     <ClInclude Include="tempent.h" />
     <ClInclude Include="text_message.h" />
     <ClInclude Include="timedevent.h" />
-    <ClInclude Include="tne_RenderTargets.h" />
     <ClInclude Include="toggletextureproxy.h" />
     <ClInclude Include="vgui_basepanel.h" />
     <ClInclude Include="vgui_bitmapbutton.h" />
@@ -1244,7 +1243,6 @@ exit 1
     <ClCompile Include="text_message.cpp" />
     <ClCompile Include="texturescrollmaterialproxy.cpp" />
     <ClCompile Include="timematerialproxy.cpp" />
-    <ClCompile Include="tne_RenderTargets.cpp" />
     <ClCompile Include="toggletextureproxy.cpp" />
     <ClCompile Include="train.cpp" />
     <ClCompile Include="..\..\game\shared\usercmd.cpp" />
@@ -1270,7 +1268,6 @@ exit 1
     <ClCompile Include="vgui_fpspanel.cpp" />
     <ClCompile Include="vgui_game_viewport.cpp" />
     <ClCompile Include="vgui_grid.cpp" />
-    <ClCompile Include="vgui_health_screen.cpp" />
     <ClCompile Include="vgui_int.cpp" />
     <ClCompile Include="vgui_loadingdiscpanel.cpp" />
     <ClCompile Include="vgui_messagechars.cpp" />

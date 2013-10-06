@@ -176,6 +176,7 @@ void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin,
 	
 		// move it right and over
 		*pOrigin = pEnt->GetAbsOrigin() + weapRight*1.75 + weapUp*2.3 + weapForward*5;
+		
 		return;
 	}
 	

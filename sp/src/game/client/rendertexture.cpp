@@ -85,6 +85,7 @@ ITexture *GetCameraTexture( void )
 //============================================================================
 // Scope Texture
 //============================================================================
+
 static CTextureReference s_pScopeTexture;
 ITexture *GetScopeTexture( void )
 {

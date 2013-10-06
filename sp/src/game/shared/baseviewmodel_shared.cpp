@@ -158,7 +158,9 @@ void CBaseViewModel::SpawnControlPanels()
 	pScreen->SetActive( true );
 	int nScreen = m_hScreens.AddToTail( );
 	m_hScreens[nScreen].Set( pScreen );
-		
+
+	Msg("Spawned health_screen on viewmodel\n");
+
 	return;
 
 	// Lookup the attachment point...

@@ -1300,7 +1300,7 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 			C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
 			if ( pWeapon )
 			{
-				hudOffset = pPlayer->GetActiveWeapon()->GetWpnData().weaponHudOffset;
+				hudOffset = pWeapon->GetWpnData().weaponHudOffset;
 			}
 		}
 		

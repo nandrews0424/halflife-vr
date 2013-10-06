@@ -193,6 +193,15 @@ void CBasePlayer::ItemPreFrame()
 		return;
 #endif
 
+#if !defined( CLIENT_DLL )
+	if ( GetActiveWeapon() )
+	{
+		SetLaserCrosshairPosition();
+	}
+#endif
+
+
+
 	pActive->ItemPreFrame();
 }
 
@@ -296,6 +305,10 @@ void CBasePlayer::ItemPostFrame()
 	// remove this line and call ImpulseCommands instead.
 	m_nImpulse = 0;
 #endif
+
+
+
+
 }
 
 
@@ -867,6 +880,12 @@ bool CBasePlayer::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex 
 		if ( pViewModel )
 			pViewModel->RemoveEffects( EF_NODRAW );
 		ResetAutoaim( );
+
+#if !defined(CLIENT_DLL)
+		// update the laser crosshair for the new weapon
+		UpdateLaserCrosshair();
+#endif
+		
 		return true;
 	}
 	return false;

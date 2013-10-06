@@ -24,6 +24,14 @@ WeaponData
 		"right"			"-13"
 	}
 
+	laserCrosshair
+	{
+		"scale"			".025"
+		"a"				"150"
+	}
+
+
+
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{

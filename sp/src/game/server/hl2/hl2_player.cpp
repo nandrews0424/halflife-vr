@@ -46,6 +46,7 @@
 #include "gamestats.h"
 #include "filters.h"
 #include "tier0/icommandline.h"
+#include "laser_crosshair.h"
 
 #ifdef HL2_EPISODIC
 #include "npc_alyx_episodic.h"

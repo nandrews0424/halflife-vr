@@ -77,6 +77,8 @@ public:
 public:	
 	// VR mod config for pushing the HUD in specific directions for a given model...
 	Vector					weaponHudOffset;
+	Color					laserCrosshairColor;
+	float					laserCrosshairScale;
 	
 	bool					bParsedScript;
 	bool					bLoadedHudElements;

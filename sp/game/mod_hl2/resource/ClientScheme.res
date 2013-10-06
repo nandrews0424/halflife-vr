@@ -280,7 +280,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"64"
 				"tall_hidef"	"58"
 				"weight"	"0"
@@ -293,7 +293,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"64"
 				"tall_hidef"	"58"
 				"weight"	"0"
@@ -308,7 +308,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"32"
 				"weight"	"0"
 				"antialias" "1"
@@ -320,7 +320,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"40" [!$OSX]
 				"tall"		"41" [$OSX]
 				"weight"	"0"
@@ -356,7 +356,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"32"	[$WIN32]
 				"tall"		"38"	[$X360]
 				"weight"	"0"
@@ -371,7 +371,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"64"
 				"weight"	"0"
 				"antialias" "1"
@@ -387,7 +387,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"50"
 				"weight"	"0"
 				"antialias" "1"
@@ -399,7 +399,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"32"	[$WIN32]
 				"tall"		"38"	[$X360]
 				"weight"	"0"
@@ -414,7 +414,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2" [!$OSX]
+				"name"		"HLVREP2" [!$OSX]
 				"name"		"Helvetica Bold" [$OSX]
 				"tall"		"16"	[$WIN32]
 				"tall"		"22"	[$X360]
@@ -651,7 +651,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"  "HalfLife2"
+				"name"  "HLVREP2"
 				"tall"			"32"
 				"tall_hidef"	"46"
 				"weight" "0"
@@ -664,7 +664,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"128"
 				"weight"	"0"
 				"antialias" "1"
@@ -687,7 +687,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"HLVREP2"
 				"tall"		"48"
 				"weight"	"0"
 				"antialias" "1"
@@ -811,7 +811,7 @@ Scheme
 	// specifies all the custom (non-system) font files that need to be loaded to service the above described fonts
 	CustomFontFiles
 	{
-		"1"		"resource/HALFLIFE2.ttf"
+		"1"		"resource/HLVREP2.ttf"
 		"2"		"resource/HL2crosshairs.ttf"
 	}
 

@@ -17,6 +17,7 @@
 #include "soundent.h"
 #include "rumble_shared.h"
 #include "gamestats.h"
+#include "particle_parse.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -35,6 +36,7 @@ public:
 	
 	void	Precache( void );
 	void	AddViewKick( void );
+	void	PrimaryAttack( void );
 	void	SecondaryAttack( void );
 
 	int		GetMinBurst() { return 2; }
@@ -150,7 +152,7 @@ CWeaponSMG1::CWeaponSMG1( )
 void CWeaponSMG1::Precache( void )
 {
 	UTIL_PrecacheOther("grenade_ar2");
-
+	PrecacheParticleSystem( "weapon_muzzle_smoke_long" );
 	BaseClass::Precache();
 }
 
@@ -170,6 +172,33 @@ void CWeaponSMG1::Equip( CBaseCombatCharacter *pOwner )
 
 	BaseClass::Equip( pOwner );
 }
+
+
+void CWeaponSMG1::PrimaryAttack( void )
+{
+	if ( ( gpGlobals->curtime - m_flLastAttackTime ) > 0.5f )
+	{
+	    m_nShotsFired = 1;
+	}
+	else
+	{
+		m_nShotsFired++;
+	}
+
+	if ( m_nShotsFired == 20 )
+	{
+		m_nShotsFired = 1;
+		CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+
+		if( pOwner )
+		{
+			DispatchParticleEffect("weapon_muzzle_smoke_long", PATTACH_POINT_FOLLOW, pOwner->GetViewModel(), "muzzle", true);
+		}
+	}
+
+	BaseClass::PrimaryAttack();
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 

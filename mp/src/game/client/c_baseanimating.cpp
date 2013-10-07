@@ -3318,8 +3318,8 @@ void C_BaseAnimating::ProcessMuzzleFlashEvent()
 			el->decay = el->radius / 0.05f;
 			el->die = gpGlobals->curtime + 0.05f;
 			el->color.r = 255;
-			el->color.g = 192;
-			el->color.b = 64;
+			el->color.g = 232;
+			el->color.b = 125;
 			el->color.exponent = 5;
 		}
 	}

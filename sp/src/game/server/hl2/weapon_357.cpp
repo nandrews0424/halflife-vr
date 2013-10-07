@@ -34,6 +34,7 @@ public:
 
 	CWeapon357( void );
 
+	void	Precache( void );
 	void	PrimaryAttack( void );
 	void	Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
 
@@ -41,6 +42,11 @@ public:
 
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
+
+private:
+	float m_iShotsFired;
+	float m_iLastShotTime;
+
 };
 
 LINK_ENTITY_TO_CLASS( weapon_357, CWeapon357 );
@@ -60,7 +66,17 @@ CWeapon357::CWeapon357( void )
 {
 	m_bReloadsSingly	= false;
 	m_bFiresUnderwater	= false;
+
+	m_iShotsFired = 0;
+	m_iLastShotTime = 0;
 }
+
+void CWeapon357::Precache()
+{
+	PrecacheParticleSystem( "weapon_muzzle_smoke" );
+	BaseClass::Precache();
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -151,6 +167,16 @@ void CWeapon357::PrimaryAttack( void )
 	pPlayer->ViewPunch( QAngle( -8, random->RandomFloat( -2, 2 ), 0 ) );
 
 	CSoundEnt::InsertSound( SOUND_COMBAT, GetAbsOrigin(), 600, 0.2, GetOwner() );
+
+	if ( m_iLastShotTime > gpGlobals->curtime - 1 )
+		m_iShotsFired++;
+	else
+		m_iShotsFired = 1;
+
+	if ( m_iShotsFired == 5 )
+		DispatchParticleEffect("weapon_muzzle_smoke", PATTACH_POINT_FOLLOW, pPlayer->GetViewModel(), "muzzle", true );
+
+	m_iLastShotTime = gpGlobals->curtime;
 
 	if ( !m_iClip1 && pPlayer->GetAmmoCount( m_iPrimaryAmmoType ) <= 0 )
 	{

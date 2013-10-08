@@ -50,6 +50,7 @@ static ConVar mt_right_hand_movement_scale( "mt_right_hand_movement_scale", "1",
 static ConVar mt_control_mode( "mt_control_mode", "2", FCVAR_ARCHIVE, "Sets the hydra control mode: 0 = Hydra in each hand, 1 = Right hand and torso, 2 = Right hand and torso with augmented one-handed controls");
 static ConVar mt_swap_hydras( "mt_swap_hydras", "0", 0, "Flip the right & left hydras");
 static ConVar mt_menu_control_mode( "mt_menu_control_mode", "0", FCVAR_ARCHIVE, "Control the mouse in menu with 0 = Right joystick, 1 = Right hand position, 2 = Both");
+static ConVar mt_tactical_haptics( "mt_tactical_haptics", "0", FCVAR_ARCHIVE, "Special mode for the hydra orientation needed for the tactical haptics guys' setup");
 
 MotionTracker* _motionTracker;
 
@@ -172,7 +173,16 @@ matrix3x4_t MotionTracker::getTrackedTorso()
 
 matrix3x4_t MotionTracker::getTrackedRightHand(bool includeCalibration)
 {
-	return getMatrixFromData(getControllerData(sixenseUtils::ControllerManager::P1R));
+	matrix3x4_t m = getMatrixFromData(getControllerData(sixenseUtils::ControllerManager::P1R));
+
+	if ( mt_tactical_haptics.GetBool() )
+	{
+		VMatrix tmp(m);
+		tmp.SetBasisVectors(-tmp.GetUp(), -tmp.GetLeft(), -tmp.GetForward()); 
+		return tmp.As3x4();
+	}
+	
+	return m;
 }
 
 void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
@@ -196,7 +206,11 @@ void MotionTracker::updateViewmodelOffset(Vector& vmorigin, QAngle& vmangles)
 	
 	MatrixMultiply(_sixenseToWorld, weaponMatrix, weaponMatrix);			// project weapon matrix by the base engine yaw
 	MatrixPosition(weaponMatrix, weaponPos);								// get the angles back off
+	
+	
 	MatrixMultiply(_rhandCalibration.As3x4(), weaponMatrix, weaponMatrix);  // adjust the weapon angles per the calibration
+
+	
 	MatrixAngles(weaponMatrix, vmangles);									// get the angles back off after applying the calibration
 		
 	vmorigin += weaponPos;
@@ -354,6 +368,7 @@ void MotionTracker::calibrate(VMatrix& torsoMatrix)
 	MatrixGetTranslation(trackedTorso, _vecBaseToTorso);
 	
 
+	// todo: come up with a better way than this....
 	if ( false && gpGlobals->curtime < _lastCalibrated + .5 ) 
 	{
 		

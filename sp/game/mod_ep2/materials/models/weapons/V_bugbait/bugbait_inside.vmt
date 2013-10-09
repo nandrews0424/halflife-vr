@@ -1,8 +1,0 @@
-"VertexLitGeneric"
-{
-	"$baseTexture" "Models/Weapons/V_bugbait/bugbait_inside"
-	"$bumpmap" "Models/Weapons/V_bugbait/bugbait_inside_normal"
-	"$envmap" "Env_Cubemap"
-//	"$envmaptint" "[.4 .4 .4]"
-	"$normalmapalphaenvmapmask" 1
-}

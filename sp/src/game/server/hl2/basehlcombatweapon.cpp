@@ -59,8 +59,6 @@ void CHLMachineGun::PrimaryAttack( void )
 	if ( (UsesClipsForAmmo1() && m_iClip1 == 0) || ( !UsesClipsForAmmo1() && !pPlayer->GetAmmoCount(m_iPrimaryAmmoType) ) )
 		return;
 
-	m_nShotsFired++;
-
 	pPlayer->DoMuzzleFlash();
 
 	// To make the firing framerate independent, we may have to fire more than one bullet here on low-framerate systems, 
@@ -85,6 +83,7 @@ void CHLMachineGun::PrimaryAttack( void )
 	}
 
 	m_iPrimaryAttacks++;
+	m_nShotsFired++;
 	m_flLastAttackTime = gpGlobals->curtime;
 	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
 

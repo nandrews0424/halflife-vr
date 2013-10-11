@@ -651,9 +651,9 @@ Scheme
 		{
 			"1"
 			{
-				"name"  "HLVREP1"
-				"tall"			"32"
-				"tall_hidef"	"46"
+				"name"  "hlvrep1"
+				"tall"			"34"
+				"tall_hidef"	"48"
 				"weight" "0"
 				"additive" "0"
 				"antialias" "1"
@@ -664,7 +664,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"hlvrep1"
 				"tall"		"128"
 				"weight"	"0"
 				"antialias" "1"
@@ -687,7 +687,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"HalfLife2"
+				"name"		"hlvrep1"
 				"tall"		"48"
 				"weight"	"0"
 				"antialias" "1"

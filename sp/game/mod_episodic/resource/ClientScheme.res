@@ -651,7 +651,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"  "HalfLife2"
+				"name"  "HLVREP1"
 				"tall"			"32"
 				"tall_hidef"	"46"
 				"weight" "0"
@@ -813,6 +813,7 @@ Scheme
 	{
 		"1"		"resource/HALFLIFE2.ttf"
 		"2"		"resource/HL2crosshairs.ttf"
+		"3"		"resource/hlvrep1.ttf"
 	}
 
 }

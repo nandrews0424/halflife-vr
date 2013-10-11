@@ -115,8 +115,6 @@ ConVar cl_backspeed( "cl_backspeed", "450", FCVAR_REPLICATED | FCVAR_CHEAT );
 
 // This is declared in the engine, too
 ConVar	sv_noclipduringpause( "sv_noclipduringpause", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "If cheats are enabled, then you can noclip with the game paused (for doing screenshots, etc.)." );
-ConVar	crosshair_laser( "crosshair_laser", "0", FCVAR_REPLICATED, "Enables crosshair laser");
-
 
 extern ConVar sv_maxunlag;
 extern ConVar sv_turbophysics;
@@ -9338,21 +9336,13 @@ void CBasePlayer::AdjustDrownDmg( int nAmount )
 // update based on the weapon info
 void CBasePlayer::UpdateLaserCrosshair( void )
 {
-	if ( m_laserCrosshair == NULL )
-	{
-		m_laserCrosshair = CLaserCrosshair::Create(GetAbsOrigin(), this, true);
-	}
-	
-	if ( !crosshair_laser.GetBool() )
-		return;
-	
 	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
 	if ( pWeapon ) 
 	{
-		m_laserCrosshair->TurnOn();
 		const FileWeaponInfo_t info = pWeapon->GetWpnData();
 		m_laserCrosshair->SetScale(info.laserCrosshairScale);
 		m_laserCrosshair->SetTransparency( kRenderGlow, info.laserCrosshairColor.r(), info.laserCrosshairColor.g(), info.laserCrosshairColor.b(), info.laserCrosshairColor.a(), kRenderFxNoDissipation );
+		m_laserCrosshair->TurnOn();
 	}
 	else
 	{
@@ -9362,21 +9352,7 @@ void CBasePlayer::UpdateLaserCrosshair( void )
 
 void CBasePlayer::SetLaserCrosshairPosition( void )
 {
-	if ( m_laserCrosshair == NULL )
-	{
-		m_laserCrosshair = CLaserCrosshair::Create(GetAbsOrigin(), this, true);
-	}
-
-	if ( !crosshair_laser.GetBool() )
-	{
-		m_laserCrosshair->TurnOff();
-		return;
-	} 
-	else if ( !m_laserCrosshair->IsOn() )
-	{
-		m_laserCrosshair->TurnOn();
-	}
-
+	
 	CBaseViewModel* pViewModel = GetViewModel();
 	if ( !m_laserCrosshair || !pViewModel )
 		return;

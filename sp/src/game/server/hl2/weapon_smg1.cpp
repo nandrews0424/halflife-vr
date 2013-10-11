@@ -176,12 +176,16 @@ void CWeaponSMG1::Equip( CBaseCombatCharacter *pOwner )
 
 void CWeaponSMG1::PrimaryAttack( void )
 {
-	if ( ( gpGlobals->curtime - .5f ) >  m_flLastAttackTime )
+	if ( ( gpGlobals->curtime - m_flLastAttackTime ) > 0.5f )
 	{
 	    m_nShotsFired = 1;
 	}
-	
-	if ( m_nShotsFired == 15 )
+	else
+	{
+		m_nShotsFired++;
+	}
+
+	if ( m_nShotsFired == 20 )
 	{
 		m_nShotsFired = 1;
 		CBasePlayer *pOwner = ToBasePlayer( GetOwner() );

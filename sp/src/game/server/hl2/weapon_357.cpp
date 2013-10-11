@@ -173,11 +173,9 @@ void CWeapon357::PrimaryAttack( void )
 	else
 		m_iShotsFired = 1;
 
-	if ( m_iShotsFired == 3 )
-	{
-		m_iShotsFired = 0;
+	if ( m_iShotsFired == 5 )
 		DispatchParticleEffect("weapon_muzzle_smoke", PATTACH_POINT_FOLLOW, pPlayer->GetViewModel(), "muzzle", true );
-	}
+
 	m_iLastShotTime = gpGlobals->curtime;
 
 	if ( !m_iClip1 && pPlayer->GetAmmoCount( m_iPrimaryAmmoType ) <= 0 )

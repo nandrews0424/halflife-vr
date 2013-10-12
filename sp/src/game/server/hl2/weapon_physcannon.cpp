@@ -500,6 +500,7 @@ private:
 	bool			m_bCarriedEntityBlocksLOS;
 	bool			m_bIgnoreRelativePitch;
 	bool 			m_bHands;
+	SolidType_t		m_attachedSolidType;
 
 	float			m_flLoadWeight;
 	float			m_savedRotDamping[VPHYSICS_MAX_OBJECT_LIST_COUNT];
@@ -713,7 +714,9 @@ QAngle CGrabController::TransformAnglesFromPlayerSpace( const QAngle &anglesIn, 
 	{
 		matrix3x4_t test;
 		QAngle angleTest = pPlayer->EyeAngles();
-		angleTest.x = 0;
+		if ( !m_bHands )
+			angleTest.x = 0;
+
 		AngleMatrix( angleTest, test );
 		return TransformAnglesToWorldSpace( anglesIn, test );
 	}
@@ -821,6 +824,10 @@ void CGrabController::AttachEntity( CBasePlayer *pPlayer, CBaseEntity *pEntity, 
 	}
 
 	m_bAllowObjectOverhead = IsObjectAllowedOverhead( pEntity );
+
+	// noclip the player and picked up entity
+	PhysDisableEntityCollisions(pEntity, m_pControllingPlayer);
+	
 }
 
 static void ClampPhysicsVelocity( IPhysicsObject *pPhys, float linearLimit, float angularLimit )
@@ -843,6 +850,9 @@ void CGrabController::DetachEntity( bool bClearVelocity )
 	CBaseEntity *pEntity = GetAttached();
 	if ( pEntity )
 	{
+		// restore player and entity collisions
+		PhysEnableEntityCollisions(pEntity, m_pControllingPlayer);
+		
 		// Restore the LS blocking state
 		pEntity->SetBlocksLOS( m_bCarriedEntityBlocksLOS );
 		IPhysicsObject *pList[VPHYSICS_MAX_OBJECT_LIST_COUNT];
@@ -2792,17 +2802,32 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 		
 	// we're just using our hands here, so push it out a bit to keep from contacting player but allow normal hand control
 	if ( m_bHands ) {
+
+		Vector mins, max;
+		pEntity->CollisionProp()->WorldSpaceAABB(&mins, &max);
+		float objectSize = (mins-max).Length();
+						
 		forward = pPlayer->EyeToWeaponOffset().Normalized();
 		forward.z = 0; // just push it forward, not up or down
-		distance = radius*1.5 + m_flDistanceOffset;
-		start.z += pPlayer->EyeToWeaponOffset().z / 2; // doubles the hand up/down offset to make it a bit easier to stack etc
+
+		distance = radius*2*(objectSize / 180.f) + m_flDistanceOffset;
+
+		// // boost the hand up/down offset to make it a bit easier to stack larger objects etc
+		if ( objectSize > 70 )
+			start.z += pPlayer->EyeToWeaponOffset().z / 2; 
 		
 		Vector torsoForward;
 		AngleVectors(pPlayer->TorsoAngles(), &torsoForward);
-
-		float eyeOffsetLength = pPlayer->EyeToWeaponOffset().Length();
-		float pctOffsetFromEyeToWeapon = Clamp((eyeOffsetLength-5.f) / 15.f, .25f, .75f);
-		SetTargetPosition( start + forward * (distance*pctOffsetFromEyeToWeapon) + torsoForward * (distance*(1-pctOffsetFromEyeToWeapon)), playerAngles );
+				
+		QAngle angles = TransformAnglesFromPlayerSpace( m_attachedAnglesPlayerSpace, pPlayer );
+		
+		matrix3x4_t attachedToWorld;
+		Vector end, offset;
+		AngleMatrix( angles, attachedToWorld );
+		VectorRotate( m_attachedPositionObjectSpace, attachedToWorld, offset );
+		
+		end = start + torsoForward*distance; 
+		SetTargetPosition( end - offset, angles );
 		return true;
 	}
 	
@@ -2852,13 +2877,6 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 							255, 0, 0,
 							true,
 							0.0f );
-	}
-
-
-	if ( m_bHands )
-	{
-		SetTargetPosition( end, playerAngles );
-		return true;
 	}
 
 

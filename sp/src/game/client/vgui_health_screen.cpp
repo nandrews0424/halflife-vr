@@ -115,23 +115,23 @@ void CHealthScreen::Paint()
 	char buf[32];
 	m_iHealth = pPlayer->GetHealth();
 	m_iSuitPower = pPlayer->GetSuitArmor();
-	
+		
     if ( m_pHealth )
     {
 	    Q_snprintf( buf, sizeof( buf ), "%i", m_iHealth );
 		m_pHealth->SetFgColor(m_clrText);
 		m_pHealth->SetText( buf );
+
     }
 
 	if ( m_pSuit )
 	{
-        Q_snprintf( buf, sizeof( buf ), "%i", m_iSuitPower ); 
+	    Q_snprintf( buf, sizeof( buf ), "%i", m_iSuitPower ); 
 		m_pSuit->SetFgColor(m_clrText);
 		m_pSuit->SetText( buf );
 	} 
 
 	// VM attached panels should fade at off-angles
-
 	VMatrix m(g_ClientVirtualReality.GetWorldFromMidEye());
 	g_MotionTracker()->overrideWeaponMatrix(m);
 	Vector weapRight	= m.GetLeft() * -1;

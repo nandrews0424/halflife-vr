@@ -3293,12 +3293,12 @@ void CWeaponPhysCannon::DoEffectIdle( void )
 			if ( m_EffectState == EFFECT_HOLDING )
 			{
 				m_hCenterSprite->SetBrightness( random->RandomInt( 32, 64 ) );
-				m_hCenterSprite->SetScale( random->RandomFloat( 0.2, 0.25 ) * flScaleFactor );
+				m_hCenterSprite->SetScale( random->RandomFloat( 0.15, 0.275 ) * flScaleFactor );
 			}
 			else
 			{
 				m_hCenterSprite->SetBrightness( random->RandomInt( 32, 64 ) );
-				m_hCenterSprite->SetScale( random->RandomFloat( 0.125, 0.15 ) * flScaleFactor );
+				m_hCenterSprite->SetScale( random->RandomFloat( 0.075, 0.175 ) * flScaleFactor );
 			}
 		}
 		
@@ -4022,7 +4022,7 @@ void CWeaponPhysCannon::DoEffectReady( )
 	if ( m_hCenterSprite != NULL )
 	{
 		m_hCenterSprite->SetBrightness( 128, 0.2f );
-		m_hCenterSprite->SetScale( 0.15f, 0.2f );
+		m_hCenterSprite->SetScale( 0.10f, 0.2f );
 		m_hCenterSprite->TurnOn();
 	}
 
@@ -4076,7 +4076,7 @@ void CWeaponPhysCannon::DoEffectHolding( )
 	if ( m_hCenterSprite != NULL )
 	{
 		m_hCenterSprite->SetBrightness( 255, 0.1f );
-		m_hCenterSprite->SetScale( 0.2f, 0.2f );
+		m_hCenterSprite->SetScale( 0.15f, 0.2f );
 		m_hCenterSprite->TurnOn();
 	}
 
@@ -4240,7 +4240,7 @@ void CWeaponPhysCannon::DoMegaEffectHolding( void )
 	if ( m_hCenterSprite != NULL )
 	{
 		m_hCenterSprite->SetBrightness( 255, 0.1f );
-		m_hCenterSprite->SetScale( 0.2f, 0.2f );
+		m_hCenterSprite->SetScale( 0.15f, 0.2f );
 		m_hCenterSprite->TurnOn();
 	}
 
@@ -4285,7 +4285,7 @@ void CWeaponPhysCannon::DoMegaEffectReady( void )
 	if ( m_hCenterSprite != NULL )
 	{
 		m_hCenterSprite->SetBrightness( 128, 0.2f );
-		m_hCenterSprite->SetScale( 0.15f, 0.2f );
+		m_hCenterSprite->SetScale( 0.10f, 0.2f );
 		m_hCenterSprite->TurnOn();
 	}
 

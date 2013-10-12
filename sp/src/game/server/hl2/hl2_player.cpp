@@ -108,7 +108,7 @@ ConVar autoaim_unlock_target( "autoaim_unlock_target", "0.8666" );
 
 ConVar sv_stickysprint("sv_stickysprint", "0", FCVAR_ARCHIVE | FCVAR_ARCHIVE_XBOX);
 
-#define	FLASH_DRAIN_TIME	 1.1111	// 100 units / 90 secs
+#define	FLASH_DRAIN_TIME	 .5	// 100 units / 90 secs
 #define	FLASH_CHARGE_TIME	 50.0f	// 100 units / 2 secs
 
 
@@ -404,17 +404,17 @@ CHL2_Player::CHL2_Player()
 #define SUITPOWER_CHARGE_RATE	12.5											// 100 units in 8 seconds
 
 #ifdef HL2MP
-	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 25.0f );				// 100 units in 4 seconds
-#else
 	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 12.5f );				// 100 units in 8 seconds
+#else
+	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 6.f );				// 100 units in 15 seconds
 #endif
 
 #ifdef HL2_EPISODIC
-	CSuitPowerDevice SuitDeviceFlashlight( bits_SUIT_DEVICE_FLASHLIGHT, 1.111 );	// 100 units in 90 second
+	CSuitPowerDevice SuitDeviceFlashlight( bits_SUIT_DEVICE_FLASHLIGHT, .6 );	// 100 units in 180 second
 #else
-	CSuitPowerDevice SuitDeviceFlashlight( bits_SUIT_DEVICE_FLASHLIGHT, 2.222 );	// 100 units in 45 second
+	CSuitPowerDevice SuitDeviceFlashlight( bits_SUIT_DEVICE_FLASHLIGHT, .6 );	// 100 units in 45 second
 #endif
-CSuitPowerDevice SuitDeviceBreather( bits_SUIT_DEVICE_BREATHER, 6.7f );		// 100 units in 15 seconds (plus three padded seconds)
+CSuitPowerDevice SuitDeviceBreather( bits_SUIT_DEVICE_BREATHER, 3.35f );		// 100 units in 30 seconds (plus three padded seconds)
 
 
 IMPLEMENT_SERVERCLASS_ST(CHL2_Player, DT_HL2_Player)

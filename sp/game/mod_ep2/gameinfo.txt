@@ -2,7 +2,7 @@
 {
 	
 	game 			"Half-Life VR: Episode Two"
-	title 			"HALF-LIFE"
+	title 			"HALF-LIFE R"
 	title2			"== episode two =="
 
 	

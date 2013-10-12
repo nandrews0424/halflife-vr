@@ -2810,12 +2810,8 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 		forward = pPlayer->EyeToWeaponOffset().Normalized();
 		forward.z = 0; // just push it forward, not up or down
 
-		distance = radius*2*(objectSize / 180.f) + m_flDistanceOffset;
-
-		// // boost the hand up/down offset to make it a bit easier to stack larger objects etc
-		if ( objectSize > 70 )
-			start.z += pPlayer->EyeToWeaponOffset().z / 2; 
-		
+		distance = radius*2*(objectSize / 120.f) + m_flDistanceOffset;
+				
 		Vector torsoForward;
 		AngleVectors(pPlayer->TorsoAngles(), &torsoForward);
 				
@@ -2827,6 +2823,11 @@ bool CGrabController::UpdateObject( CBasePlayer *pPlayer, float flError )
 		VectorRotate( m_attachedPositionObjectSpace, attachedToWorld, offset );
 		
 		end = start + torsoForward*distance; 
+
+		// // boost the hand up/down offset to make it a bit easier to stack larger objects etc
+		if ( objectSize > 70 )
+			end.z += pPlayer->EyeToWeaponOffset().z / 2; 
+		
 		SetTargetPosition( end - offset, angles );
 		return true;
 	}

@@ -1098,12 +1098,14 @@ float IntervalDistance( float x, float x0, float x1 )
 
 CBaseEntity *CBasePlayer::FindUseEntity()
 {
+	// VR Changes - use point is right hand weapon offset, eyevectors still ok since the engine transfers weapon angle to eyeangle
 	Vector forward, up;
 	EyeVectors( &forward, NULL, &up );
 
 	trace_t tr;
 	// Search for objects in a sphere (tests for entities that are not solid, yet still useable)
-	Vector searchCenter = EyePosition();
+	Vector searchCenter = EyePosition() + EyeToWeaponOffset();
+
 
 	// NOTE: Some debris objects are useable too, so hit those as well
 	// A button, etc. can be made out of clip brushes, make sure it's +useable via a traceline, too.

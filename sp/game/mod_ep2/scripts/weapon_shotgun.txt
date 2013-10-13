@@ -27,8 +27,8 @@ WeaponData
 
 	laserCrosshair
 	{
-		"scale"			".01"
-		"a"				"175"
+		"scale"			".75"
+		"a"				"235"
 	}
 
 

@@ -35,6 +35,15 @@
 			game					|all_source_engine_paths|hl2/hl2_misc.vpk
 			platform				|all_source_engine_paths|platform/platform_misc.vpk
 
+			// adding lost coast here for now...
+
+			game					|gameinfo_path|lostcoast_sound_vo_english.vpk
+			game					|gameinfo_path|lostcoast_pak.vpk
+			
+			game 					lostcoast/lostcoast_sound_vo_english.vpk
+			game					lostcoast/lostcoast_pak.vpk
+			
+
 			game					|all_source_engine_paths|episodic
 			game					|all_source_engine_paths|hl2
 			platform				|all_source_engine_paths|platform

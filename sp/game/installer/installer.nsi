@@ -1,7 +1,6 @@
 !include "MUI2.nsh"
 !define VERSION '1.2.0'
 
-
 Name "Half-Life VR"
 
 OutFile ".\output\halflife-vr-${VERSION}.exe"
@@ -39,13 +38,11 @@ If you have any issues or ideas please send feedback so we can improve the mod.'
 Section "" 
 
 	SetOutPath $INSTDIR\halflife-vr
-	;File /r ..\mod_hl2\*
+	File /r ..\mod_hl2\*
 	
 	SetOutPath $INSTDIR\halflife-vr-ep1
-	;File /r ..\mod_episodic\*
+	File /r ..\mod_episodic\*
 	
-	WriteUninstaller $INSTDIR\halflife-vr\Uninstall.exe
-
 SectionEnd
 
 Function .onInit
@@ -75,7 +72,3 @@ Function .onInit
 	StrCpy $INSTDIR "$R1"
 	
 FunctionEnd
-
-Section "Uninstall"
-	RMDir $INSTDIR\halflife-vr
-SectionEnd

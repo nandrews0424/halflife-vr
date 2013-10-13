@@ -625,7 +625,6 @@ void MotionTracker::sixenseGuiMouseControl()
 	} 
 	else if ( _isGuiActive )
 	{
-		Msg("Gui is no longer active \n");
 		_isGuiActive = false;
 	}
 

@@ -13,6 +13,7 @@
 #include "antlion_maker.h"
 #include "grenade_bugbait.h"
 #include "gamestats.h"
+#include "movevars_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -20,6 +21,13 @@
 //
 // Bug Bait Weapon
 //
+
+
+#define NUM_ARC_POINTS 15
+#define ARC_TIME_UNIT  .04
+#define ARC_SPRITE_SCALE .075
+#define ARC_SPRITE "sprites/laserdot.vmt"
+
 
 class CWeaponBugBait : public CBaseHLCombatWeapon
 {
@@ -42,7 +50,7 @@ public:
 	void	OnPickedUp( CBaseCombatCharacter *pNewOwner );
 	bool	Deploy( void );
 	bool	Holster( CBaseCombatWeapon *pSwitchingTo );
-
+	
 	void	ItemPostFrame( void );
 	void	Precache( void );
 	void	PrimaryAttack( void );
@@ -65,6 +73,11 @@ protected:
 	bool		m_bRedraw;
 	bool		m_bEmitSpores;
 	EHANDLE		m_hSporeTrail;
+
+	CHandle<CSprite>	m_hArcPoints[NUM_ARC_POINTS];
+	
+	void	DrawArc( );
+	void	HideArc( );
 };
 
 IMPLEMENT_SERVERCLASS_ST(CWeaponBugBait, DT_WeaponBugBait)
@@ -81,6 +94,7 @@ BEGIN_DATADESC( CWeaponBugBait )
 	DEFINE_FIELD( m_bRedraw,			FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bEmitSpores,		FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bDrawBackFinished,	FIELD_BOOLEAN ),
+	DEFINE_AUTO_ARRAY( m_hArcPoints, FIELD_EHANDLE ),
 
 	DEFINE_FUNCTION( BugbaitStickyTouch ),
 
@@ -94,6 +108,17 @@ CWeaponBugBait::CWeaponBugBait( void )
 	m_bDrawBackFinished	= false;
 	m_bRedraw			= false;
 	m_hSporeTrail		= NULL;
+
+
+	for ( int i=0; i < NUM_ARC_POINTS; i++ )
+	{
+		m_hArcPoints[i] = CSprite::SpriteCreate(ARC_SPRITE, GetAbsOrigin(), false );
+		m_hArcPoints[i]->SetTransparency( kRenderGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
+		m_hArcPoints[i]->SetBrightness(220);
+		m_hArcPoints[i]->SetScale( ARC_SPRITE_SCALE);
+		m_hArcPoints[i]->TurnOff();
+	}
+
 }
 
 //-----------------------------------------------------------------------------
@@ -136,6 +161,7 @@ void CWeaponBugBait::FallInit( void )
 void CWeaponBugBait::Precache( void )
 {
 	BaseClass::Precache();
+	PrecacheModel( ARC_SPRITE );
 
 	UTIL_PrecacheOther( "npc_grenade_bugbait" );
 
@@ -259,20 +285,88 @@ void CWeaponBugBait::SecondaryAttack( void )
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *pPlayer - 
-//-----------------------------------------------------------------------------
+// draw sprites along the arc the thrown object will take
+
+void CWeaponBugBait::DrawArc(  )
+{
+
+	CBaseCombatCharacter *pOwner  = GetOwner();
+	
+	if ( pOwner == NULL )
+		return;
+
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+	
+	if ( pPlayer == NULL )
+		return;
+
+	Vector throwVelocity, shootDirection;
+	Vector origin = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
+	pPlayer->EyeVectors(&shootDirection);
+
+	pPlayer->GetVelocity( &throwVelocity, NULL );
+	throwVelocity +=  shootDirection * 1000;
+	throwVelocity *= ARC_TIME_UNIT;  
+
+	Vector vecGravity = Vector(0,0,-GetCurrentGravity() * ARC_TIME_UNIT * ARC_TIME_UNIT);
+	
+	Vector last = origin;
+	bool impacted = false;
+	for ( int i = 0; i < NUM_ARC_POINTS; i ++ )
+	{
+		if ( false && impacted )
+		{
+			m_hArcPoints[i]->TurnOff();
+			continue;
+		}
+
+		// Position at a specific point in time:
+		// p(n) = orig + n*vel + ((n^2+n)*accel) / 2
+		int t = i+1;
+		Vector position = origin + throwVelocity*t + ((t*t+t)*vecGravity) / 2;  
+		
+		
+		m_hArcPoints[i]->TurnOn();
+		m_hArcPoints[i]->SetAbsOrigin(position);
+				
+		trace_t tr;
+		UTIL_TraceLine(last, position, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+
+		if ( false && tr.fraction < 1 ) // segment impacted, place sprite on impact point, change it's color etc
+		{
+			impacted = true;
+			// m_hArcPoints[i]->SetAbsOrigin(tr.endpos);
+			// m_hArcPoints[i]->SetBrightness(20);
+		}
+
+		last = position;
+	}
+}
+
+void CWeaponBugBait::HideArc( )
+{
+	for ( int i = 0; i < NUM_ARC_POINTS; i ++ )
+	{
+		if ( m_hArcPoints[i] != NULL )
+		{
+			m_hArcPoints[i]->TurnOff();
+			
+		}
+	}
+}
+
+
+
+
 void CWeaponBugBait::ThrowGrenade( CBasePlayer *pPlayer )
 {
 	Vector	vForward, vRight, vUp, vThrowPos, vThrowVel;
 	
 	pPlayer->EyeVectors( &vForward, &vRight, &vUp );
 
-	vThrowPos = pPlayer->EyePosition();
+	vThrowPos = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
 
-	vThrowPos += vForward * 18.0f;
-	vThrowPos += vRight * 12.0f;
+	vThrowPos += vForward*3.0f + vRight*3.0f; // adjust slightly for release animation	
 
 	pPlayer->GetVelocity( &vThrowVel, NULL );
 	vThrowVel += vForward * 1000;
@@ -352,10 +446,13 @@ void CWeaponBugBait::ItemPostFrame( void )
 	// See if we're cocked and ready to throw
 	if ( m_bDrawBackFinished )
 	{
+		DrawArc(); 
+
 		if ( ( pOwner->m_nButtons & IN_ATTACK ) == false )
 		{
 			SendWeaponAnim( ACT_VM_THROW );
 			m_flNextPrimaryAttack  = gpGlobals->curtime + SequenceDuration();
+			HideArc();
 			m_bDrawBackFinished = false;
 		}
 	}

@@ -29,6 +29,8 @@ public:
 
 	void	MakeInvisible( void );
 
+	void	Precache( void );
+
 protected:
 	Vector				m_vecSurfaceNormal;
 	bool				m_bVisibleLaserDot;

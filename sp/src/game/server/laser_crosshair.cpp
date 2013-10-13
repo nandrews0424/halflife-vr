@@ -23,6 +23,12 @@ CLaserCrosshair::~CLaserCrosshair( void )
 	
 }
 
+void CLaserCrosshair::Precache( void )
+{
+	PrecacheModel("sprites/laserdot.vmt");
+	BaseClass::Precache();
+}
+
 CLaserCrosshair *CLaserCrosshair::Create( const Vector &origin, CBaseEntity *pOwner, bool bVisibleDot )
 {
 	CLaserCrosshair *pLaserDot = (CLaserCrosshair *) CBaseEntity::Create( "env_laserdot", origin, QAngle(0,0,0) );
@@ -37,7 +43,7 @@ CLaserCrosshair *CLaserCrosshair::Create( const Vector &origin, CBaseEntity *pOw
 	UTIL_SetSize( pLaserDot, vec3_origin, vec3_origin );
 
 	//Create the graphic
-	pLaserDot->SpriteInit( "sprites/redglow2.vmt", origin );
+	pLaserDot->SpriteInit( "sprites/laserdot.vmt", origin );
 
 	pLaserDot->SetName( AllocPooledString("TEST") );
 

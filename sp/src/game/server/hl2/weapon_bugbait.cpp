@@ -22,11 +22,10 @@
 // Bug Bait Weapon
 //
 
-
-#define NUM_ARC_POINTS 15
-#define ARC_TIME_UNIT  .04
-#define ARC_SPRITE_SCALE .075
-#define ARC_SPRITE "sprites/laserdot.vmt"
+#define NUM_ARC_POINTS 25
+#define ARC_TIME_UNIT  .035
+#define ARC_SPRITE_SCALE .125
+#define ARC_SPRITE "HUD/ThrowArc.vmt"
 
 
 class CWeaponBugBait : public CBaseHLCombatWeapon
@@ -108,13 +107,12 @@ CWeaponBugBait::CWeaponBugBait( void )
 	m_bDrawBackFinished	= false;
 	m_bRedraw			= false;
 	m_hSporeTrail		= NULL;
-
-
+	
 	for ( int i=0; i < NUM_ARC_POINTS; i++ )
 	{
 		m_hArcPoints[i] = CSprite::SpriteCreate(ARC_SPRITE, GetAbsOrigin(), false );
-		m_hArcPoints[i]->SetTransparency( kRenderGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
-		m_hArcPoints[i]->SetBrightness(220);
+		m_hArcPoints[i]->SetTransparency( kRenderWorldGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
+		m_hArcPoints[i]->SetBrightness(140);
 		m_hArcPoints[i]->SetScale( ARC_SPRITE_SCALE);
 		m_hArcPoints[i]->TurnOff();
 	}
@@ -325,18 +323,24 @@ void CWeaponBugBait::DrawArc(  )
 		int t = i+1;
 		Vector position = origin + throwVelocity*t + ((t*t+t)*vecGravity) / 2;  
 		
-		
 		m_hArcPoints[i]->TurnOn();
 		m_hArcPoints[i]->SetAbsOrigin(position);
-				
+		
+		float pct = i/(float)NUM_ARC_POINTS;
+		pct *= pct;
+		
+		m_hArcPoints[i]->SetBrightness( 165 - 165*pct );
+		m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE);
+
 		trace_t tr;
 		UTIL_TraceLine(last, position, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
 
-		if ( false && tr.fraction < 1 ) // segment impacted, place sprite on impact point, change it's color etc
+		if ( tr.fraction < 1 ) // segment impacted, place sprite on impact point, change it's color etc
 		{
 			impacted = true;
-			// m_hArcPoints[i]->SetAbsOrigin(tr.endpos);
-			// m_hArcPoints[i]->SetBrightness(20);
+			m_hArcPoints[i]->SetAbsOrigin(tr.endpos);
+			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE*2.5);
+			m_hArcPoints[i]->SetBrightness( 150 );
 		}
 
 		last = position;
@@ -526,7 +530,7 @@ bool CWeaponBugBait::Holster( CBaseCombatWeapon *pSwitchingTo )
 {
 	m_bRedraw = false;
 	m_bDrawBackFinished = false;
-
+	HideArc();
 	return BaseClass::Holster( pSwitchingTo );
 }
 

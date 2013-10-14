@@ -15,6 +15,7 @@
 #include "in_buttons.h"
 #include "soundent.h"
 #include "gamestats.h"
+#include "movevars_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -26,6 +27,12 @@
 #define GRENADE_PAUSED_SECONDARY	2
 
 #define GRENADE_RADIUS	4.0f // inches
+
+#define NUM_ARC_POINTS 25
+#define ARC_TIME_UNIT  .035
+#define ARC_SPRITE_SCALE .125
+#define ARC_SPRITE "HUD/ThrowArc.vmt"
+
 
 //-----------------------------------------------------------------------------
 // Fragmentation grenades
@@ -67,6 +74,10 @@ private:
 	int		m_AttackPaused;
 	bool	m_fDrawbackFinished;
 
+	CHandle<CSprite>	m_hArcPoints[NUM_ARC_POINTS];
+	void	DrawArc( bool primary = true );
+	void	HideArc( );
+
 	DECLARE_ACTTABLE();
 
 	DECLARE_DATADESC();
@@ -94,12 +105,20 @@ PRECACHE_WEAPON_REGISTER(weapon_frag);
 
 
 
-CWeaponFrag::CWeaponFrag() :
-	CBaseHLCombatWeapon(),
-	m_bRedraw( false )
+CWeaponFrag::CWeaponFrag() : CBaseHLCombatWeapon(), m_bRedraw( false )
 {
-	NULL;
+			
+	for ( int i=0; i < NUM_ARC_POINTS; i++ )
+	{
+		m_hArcPoints[i] = CSprite::SpriteCreate(ARC_SPRITE, GetAbsOrigin(), false );
+		m_hArcPoints[i]->SetTransparency( kRenderWorldGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
+		m_hArcPoints[i]->SetBrightness(140);
+		m_hArcPoints[i]->SetScale( ARC_SPRITE_SCALE);
+		m_hArcPoints[i]->TurnOff();
+	}
 }
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -107,11 +126,11 @@ CWeaponFrag::CWeaponFrag() :
 void CWeaponFrag::Precache( void )
 {
 	BaseClass::Precache();
-
+	
 	UTIL_PrecacheOther( "npc_grenade_frag" );
-
 	PrecacheScriptSound( "WeaponFrag.Throw" );
 	PrecacheScriptSound( "WeaponFrag.Roll" );
+	PrecacheModel( ARC_SPRITE );
 }
 
 //-----------------------------------------------------------------------------
@@ -133,7 +152,7 @@ bool CWeaponFrag::Holster( CBaseCombatWeapon *pSwitchingTo )
 {
 	m_bRedraw = false;
 	m_fDrawbackFinished = false;
-
+	HideArc();
 	return BaseClass::Holster( pSwitchingTo );
 }
 
@@ -323,14 +342,17 @@ void CWeaponFrag::ItemPostFrame( void )
 			switch( m_AttackPaused )
 			{
 			case GRENADE_PAUSED_PRIMARY:
+				DrawArc(); 		
 				if( !(pOwner->m_nButtons & IN_ATTACK) )
 				{
 					SendWeaponAnim( ACT_VM_THROW );
 					m_fDrawbackFinished = false;
+					HideArc();
 				}
 				break;
 
 			case GRENADE_PAUSED_SECONDARY:
+				DrawArc(false); 
 				if( !(pOwner->m_nButtons & IN_ATTACK2) )
 				{
 					//See if we're ducking
@@ -345,6 +367,7 @@ void CWeaponFrag::ItemPostFrame( void )
 						SendWeaponAnim( ACT_VM_HAULBACK );
 					}
 
+					HideArc();
 					m_fDrawbackFinished = false;
 				}
 				break;
@@ -386,12 +409,12 @@ void CWeaponFrag::CheckThrowPosition( CBasePlayer *pPlayer, const Vector &vecEye
 //-----------------------------------------------------------------------------
 void CWeaponFrag::ThrowGrenade( CBasePlayer *pPlayer )
 {
-	Vector	vecEye = pPlayer->EyePosition();
+	Vector	vecHand = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
 	Vector	vForward, vRight;
 
 	pPlayer->EyeVectors( &vForward, &vRight, NULL );
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
-	CheckThrowPosition( pPlayer, vecEye, vecSrc );
+	Vector vecSrc = vecHand + vForward*3.0f + vRight*3.f;
+	// CheckThrowPosition( pPlayer, vecHand, vecSrc );
 //	vForward[0] += 0.1f;
 	vForward[2] += 0.1f;
 
@@ -476,5 +499,83 @@ void CWeaponFrag::RollGrenade( CBasePlayer *pPlayer )
 
 	m_iPrimaryAttacks++;
 	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
+}
+
+
+void CWeaponFrag::DrawArc( bool primary )
+{
+
+	CBaseCombatCharacter *pOwner  = GetOwner();
+	
+	if ( pOwner == NULL )
+		return;
+
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+	
+	if ( pPlayer == NULL )
+		return;
+
+	Vector throwVelocity, shootDirection;
+	Vector origin = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
+	pPlayer->EyeVectors(&shootDirection);
+
+	pPlayer->GetVelocity( &throwVelocity, NULL );
+	
+	shootDirection[2] += 0.1f;
+	throwVelocity +=  shootDirection * 1000; // hack: I haven't the slightest why this isn't the same as it is in throw
+	
+	throwVelocity *= ARC_TIME_UNIT;  
+	
+	Vector vecGravity = Vector(0,0,-GetCurrentGravity() * ARC_TIME_UNIT * ARC_TIME_UNIT);
+	
+	Vector last = origin;
+	bool impacted = false;
+	for ( int i = 0; i < NUM_ARC_POINTS; i ++ )
+	{
+		if ( false && impacted )
+		{
+			m_hArcPoints[i]->TurnOff();
+			continue;
+		}
+
+		// Position at a specific point in time:
+		// p(n) = orig + n*vel + ((n^2+n)*accel) / 2
+		int t = i+1;
+		Vector position = origin + throwVelocity*t + ((t*t+t)*vecGravity) / 2;  
+		
+		m_hArcPoints[i]->TurnOn();
+		m_hArcPoints[i]->SetAbsOrigin(position);
+		
+		float pct = i/(float)NUM_ARC_POINTS;
+		pct *= pct;
+		
+		m_hArcPoints[i]->SetBrightness( 165 - 165*pct );
+		m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE);
+
+		trace_t tr;
+		UTIL_TraceLine(last, position, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+
+		if ( tr.fraction < 1 ) // segment impacted, place sprite on impact point, change it's color etc
+		{
+			impacted = true;
+			m_hArcPoints[i]->SetAbsOrigin(tr.endpos);
+			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE*2.5);
+			m_hArcPoints[i]->SetBrightness( 150 );
+		}
+
+		last = position;
+	}
+}
+
+void CWeaponFrag::HideArc( )
+{
+	for ( int i = 0; i < NUM_ARC_POINTS; i ++ )
+	{
+		if ( m_hArcPoints[i] != NULL )
+		{
+			m_hArcPoints[i]->TurnOff();
+			
+		}
+	}
 }
 

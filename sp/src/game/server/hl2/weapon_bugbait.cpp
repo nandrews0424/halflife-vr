@@ -22,10 +22,14 @@
 // Bug Bait Weapon
 //
 
+
+
+
 #define NUM_ARC_POINTS 25
 #define ARC_TIME_UNIT  .035
-#define ARC_SPRITE_SCALE .125
+#define ARC_SPRITE_SCALE .125 
 #define ARC_SPRITE "HUD/ThrowArc.vmt"
+#define ARC_SPRITE_IMPACT "HUD/ThrowImpact.vmt"
 
 
 class CWeaponBugBait : public CBaseHLCombatWeapon
@@ -73,6 +77,7 @@ protected:
 	bool		m_bEmitSpores;
 	EHANDLE		m_hSporeTrail;
 
+	float		m_pulseStart;
 	CHandle<CSprite>	m_hArcPoints[NUM_ARC_POINTS];
 	
 	void	DrawArc( );
@@ -107,15 +112,26 @@ CWeaponBugBait::CWeaponBugBait( void )
 	m_bDrawBackFinished	= false;
 	m_bRedraw			= false;
 	m_hSporeTrail		= NULL;
-	
-	for ( int i=0; i < NUM_ARC_POINTS; i++ )
+	m_pulseStart		= 0;
+
+	for ( int i=0; i < NUM_ARC_POINTS-1; i++ )
 	{
+		
 		m_hArcPoints[i] = CSprite::SpriteCreate(ARC_SPRITE, GetAbsOrigin(), false );
 		m_hArcPoints[i]->SetTransparency( kRenderWorldGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
-		m_hArcPoints[i]->SetBrightness(140);
+		m_hArcPoints[i]->SetBrightness(80);
 		m_hArcPoints[i]->SetScale( ARC_SPRITE_SCALE);
 		m_hArcPoints[i]->TurnOff();
 	}
+
+	// last one is a different sprite
+	int idxImpact = NUM_ARC_POINTS-1;
+	m_hArcPoints[idxImpact] = CSprite::SpriteCreate(ARC_SPRITE_IMPACT, GetAbsOrigin(), false );
+	m_hArcPoints[idxImpact]->SetTransparency( kRenderWorldGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
+	m_hArcPoints[idxImpact]->SetScale(ARC_SPRITE_SCALE*2.5);
+	m_hArcPoints[idxImpact]->SetBrightness( 100 );
+	m_hArcPoints[idxImpact]->TurnOff();
+
 
 }
 
@@ -160,6 +176,7 @@ void CWeaponBugBait::Precache( void )
 {
 	BaseClass::Precache();
 	PrecacheModel( ARC_SPRITE );
+	PrecacheModel( ARC_SPRITE_IMPACT );
 
 	UTIL_PrecacheOther( "npc_grenade_bugbait" );
 
@@ -287,7 +304,8 @@ void CWeaponBugBait::SecondaryAttack( void )
 
 void CWeaponBugBait::DrawArc(  )
 {
-
+	int idxImpact = NUM_ARC_POINTS-1;
+	float curtime = gpGlobals->curtime;
 	CBaseCombatCharacter *pOwner  = GetOwner();
 	
 	if ( pOwner == NULL )
@@ -310,11 +328,17 @@ void CWeaponBugBait::DrawArc(  )
 	
 	Vector last = origin;
 	bool impacted = false;
-	for ( int i = 0; i < NUM_ARC_POINTS; i ++ )
+
+	// Reset the indicator pulse time
+	float pulseSpeedScale = 1;
+	if ( curtime > m_pulseStart + NUM_ARC_POINTS*ARC_TIME_UNIT*pulseSpeedScale*2.5)
+		m_pulseStart = curtime;
+	
+	for ( int i = 0; i < NUM_ARC_POINTS - 1; i ++ )
 	{
-		if ( false && impacted )
+		if ( impacted )
 		{
-			m_hArcPoints[i]->TurnOff();
+		 	m_hArcPoints[i]->TurnOff();
 			continue;
 		}
 
@@ -323,27 +347,39 @@ void CWeaponBugBait::DrawArc(  )
 		int t = i+1;
 		Vector position = origin + throwVelocity*t + ((t*t+t)*vecGravity) / 2;  
 		
+		
 		m_hArcPoints[i]->TurnOn();
 		m_hArcPoints[i]->SetAbsOrigin(position);
+		float pct = i/(float) NUM_ARC_POINTS;
+		m_hArcPoints[i]->SetBrightness( 80 - 80*pct*pct );
 		
-		float pct = i/(float)NUM_ARC_POINTS;
-		pct *= pct;
+		// show a segment brighter if it fits within the pulse window
+		float elapsed = curtime-m_pulseStart; 
+		int pulseSegment = floor(elapsed / (ARC_TIME_UNIT*pulseSpeedScale));
 		
-		m_hArcPoints[i]->SetBrightness( 165 - 165*pct );
-		m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE);
-
+		if ( i == pulseSegment )
+			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE*2, .2);
+		else 
+			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE, .2);
+		
 		trace_t tr;
 		UTIL_TraceLine(last, position, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
 
-		if ( tr.fraction < 1 ) // segment impacted, place sprite on impact point, change it's color etc
+		if ( tr.fraction < 1 ) // segment impacted, place impact sprite
 		{
 			impacted = true;
-			m_hArcPoints[i]->SetAbsOrigin(tr.endpos);
-			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE*2.5);
-			m_hArcPoints[i]->SetBrightness( 150 );
+
+			m_hArcPoints[i]->TurnOff();
+			m_hArcPoints[idxImpact]->SetAbsOrigin(tr.endpos);
+			m_hArcPoints[idxImpact]->TurnOn();
 		}
 
 		last = position;
+	}
+
+	if ( !impacted )
+	{
+		m_hArcPoints[idxImpact]->TurnOff();
 	}
 }
 

@@ -1,9 +1,10 @@
 "UnlitGeneric"
 {
-	"$basetexture" "HUD/ThrowArc01"
-	"$additive" 1
-	"$alphatest" 1
-	"$nolod" 1
+	"$baseTexture" "HUD/ThrowArc"
 	"$translucent" 1
-	"$vertexalpha" 1
+	"$alpha" 1
+	"$vertexalpha" "1"
+	"$ignorez"     "1"
+	"$no_fullbright" "1"	
+	"$vertextcolor" "1"
 }

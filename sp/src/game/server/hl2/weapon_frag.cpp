@@ -30,9 +30,9 @@
 
 #define NUM_ARC_POINTS 25
 #define ARC_TIME_UNIT  .035
-#define ARC_SPRITE_SCALE .125
+#define ARC_SPRITE_SCALE .125 
 #define ARC_SPRITE "HUD/ThrowArc.vmt"
-
+#define ARC_SPRITE_IMPACT "HUD/ThrowImpact.vmt"
 
 //-----------------------------------------------------------------------------
 // Fragmentation grenades
@@ -66,6 +66,8 @@ private:
 	void	ThrowGrenade( CBasePlayer *pPlayer );
 	void	RollGrenade( CBasePlayer *pPlayer );
 	void	LobGrenade( CBasePlayer *pPlayer );
+	void	MotionThrowGrenade( CBasePlayer *pPlayer, bool release );
+
 	// check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
 	void	CheckThrowPosition( CBasePlayer *pPlayer, const Vector &vecEye, Vector &vecSrc );
 
@@ -74,7 +76,15 @@ private:
 	int		m_AttackPaused;
 	bool	m_fDrawbackFinished;
 
+	float		m_pulseStart;
 	CHandle<CSprite>	m_hArcPoints[NUM_ARC_POINTS];
+	
+	// readings for motion swings
+	Vector	m_lastPosition;
+	QAngle	m_lastAngle;
+	float	m_lastSample;
+	bool	m_bMotionThrow;
+
 	void	DrawArc( bool primary = true );
 	void	HideArc( );
 
@@ -107,15 +117,26 @@ PRECACHE_WEAPON_REGISTER(weapon_frag);
 
 CWeaponFrag::CWeaponFrag() : CBaseHLCombatWeapon(), m_bRedraw( false )
 {
-			
-	for ( int i=0; i < NUM_ARC_POINTS; i++ )
+	m_pulseStart		= 0;
+	m_lastSample		= 0;
+
+	for ( int i=0; i < NUM_ARC_POINTS-1; i++ )
 	{
 		m_hArcPoints[i] = CSprite::SpriteCreate(ARC_SPRITE, GetAbsOrigin(), false );
 		m_hArcPoints[i]->SetTransparency( kRenderWorldGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
-		m_hArcPoints[i]->SetBrightness(140);
+		m_hArcPoints[i]->SetBrightness(80);
 		m_hArcPoints[i]->SetScale( ARC_SPRITE_SCALE);
 		m_hArcPoints[i]->TurnOff();
 	}
+
+	// last one is a different sprite
+	int idxImpact = NUM_ARC_POINTS-1;
+	m_hArcPoints[idxImpact] = CSprite::SpriteCreate(ARC_SPRITE_IMPACT, GetAbsOrigin(), false );
+	m_hArcPoints[idxImpact]->SetTransparency( kRenderWorldGlow, 255, 255, 255, 64, kRenderFxNoDissipation );
+	m_hArcPoints[idxImpact]->SetScale(ARC_SPRITE_SCALE*2.5);
+	m_hArcPoints[idxImpact]->SetBrightness( 100 );
+	m_hArcPoints[idxImpact]->TurnOff();
+
 }
 
 
@@ -173,15 +194,19 @@ void CWeaponFrag::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 			break;
 
 		case EVENT_WEAPON_THROW:
-			ThrowGrenade( pOwner );
-			DecrementAmmo( pOwner );
-			fThrewGrenade = true;
+			if ( !m_bMotionThrow ) // throw already occurred if it was a motion throw
+			{
+				ThrowGrenade( pOwner );
+				DecrementAmmo( pOwner );
+				fThrewGrenade = true;
+			}
 			break;
 
 		case EVENT_WEAPON_THROW2:
-			RollGrenade( pOwner );
-			DecrementAmmo( pOwner );
-			fThrewGrenade = true;
+			// VR: We don't do any of this here, as it doesn't occur until the grenade is actually thrown			
+			// RollGrenade( pOwner );
+			// DecrementAmmo( pOwner );
+			// fThrewGrenade = true;
 			break;
 
 		case EVENT_WEAPON_THROW3:
@@ -198,6 +223,7 @@ void CWeaponFrag::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 #define RETHROW_DELAY	0.5
 	if( fThrewGrenade )
 	{
+
 		m_flNextPrimaryAttack	= gpGlobals->curtime + RETHROW_DELAY;
 		m_flNextSecondaryAttack	= gpGlobals->curtime + RETHROW_DELAY;
 		m_flTimeWeaponIdle = FLT_MAX; //NOTE: This is set once the animation has finished up!
@@ -270,7 +296,9 @@ void CWeaponFrag::SecondaryAttack( void )
 
 	// Note that this is a secondary attack and prepare the grenade attack to pause.
 	m_AttackPaused = GRENADE_PAUSED_SECONDARY;
-	SendWeaponAnim( ACT_VM_PULLBACK_LOW );
+	
+	// TODO: REPLACE ME
+	SendWeaponAnim( ACT_VM_PULLBACK_LOW ); 
 
 	// Don't let weapon idle interfere in the middle of a throw!
 	m_flTimeWeaponIdle = FLT_MAX;
@@ -352,23 +380,13 @@ void CWeaponFrag::ItemPostFrame( void )
 				break;
 
 			case GRENADE_PAUSED_SECONDARY:
-				DrawArc(false); 
 				if( !(pOwner->m_nButtons & IN_ATTACK2) )
 				{
-					//See if we're ducking
-					if ( pOwner->m_nButtons & IN_DUCK )
-					{
-						//Send the weapon animation
-						SendWeaponAnim( ACT_VM_SECONDARYATTACK );
-					}
-					else
-					{
-						//Send the weapon animation
-						SendWeaponAnim( ACT_VM_HAULBACK );
-					}
-
-					HideArc();
-					m_fDrawbackFinished = false;
+					MotionThrowGrenade( pOwner, true );
+				}
+				else
+				{
+					MotionThrowGrenade( pOwner, false );
 				}
 				break;
 
@@ -409,6 +427,7 @@ void CWeaponFrag::CheckThrowPosition( CBasePlayer *pPlayer, const Vector &vecEye
 //-----------------------------------------------------------------------------
 void CWeaponFrag::ThrowGrenade( CBasePlayer *pPlayer )
 {
+	m_bMotionThrow = false;
 	Vector	vecHand = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
 	Vector	vForward, vRight;
 
@@ -502,9 +521,70 @@ void CWeaponFrag::RollGrenade( CBasePlayer *pPlayer )
 }
 
 
+
+#define MOTION_CHECK_RATE .02
+#define MOTION_THROW_SCALE 4.33
+void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
+{
+	if ( !release )
+	{
+		if ( gpGlobals->curtime > m_lastSample + MOTION_CHECK_RATE )
+		{
+			// just capping the data
+			m_lastPosition = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
+			m_lastAngle = pPlayer->EyeAngles();
+			m_lastSample = gpGlobals->curtime; 
+		}
+
+		return;
+	}
+	
+	m_bMotionThrow = true;
+	SendWeaponAnim( ACT_VM_THROW );
+	m_fDrawbackFinished = false;
+	
+	Vector	handPosition = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
+
+	Vector handMovement = handPosition - m_lastPosition;
+	QAngle handAngle = pPlayer->EyeAngles();
+	
+	float dt = gpGlobals->curtime - m_lastSample;
+	float dx = AngleDiff(handAngle.x, m_lastAngle.x);
+	float dy = AngleDiff(handAngle.y, m_lastAngle.y);
+	float dz = AngleDiff(handAngle.z, m_lastAngle.z);
+
+	Vector angularImpulse = AngularImpulse(dx/dt, dy/dt, dz/dt);
+	Vector vecThrow;
+	pPlayer->GetVelocity( &vecThrow, NULL );
+	
+	vecThrow += ( handMovement * MOTION_THROW_SCALE ) / dt;
+
+	Fraggrenade_Create( handPosition, handAngle, vecThrow, angularImpulse, pPlayer, GRENADE_TIMER, false );
+	// TODO:  DecrementAmmo( pPlayer );
+	
+	m_bRedraw = true;
+	WeaponSound( SINGLE );
+
+	m_iPrimaryAttacks++;
+	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
+	m_flNextPrimaryAttack	= gpGlobals->curtime + RETHROW_DELAY;
+	m_flNextSecondaryAttack	= gpGlobals->curtime + RETHROW_DELAY;
+	m_flTimeWeaponIdle = FLT_MAX; //NOTE: This is set once the animation has finished up!
+
+	// some weird hack for a sniper sound
+	Vector forward;
+	pPlayer->EyeVectors(&forward);
+	trace_t tr;
+	UTIL_TraceLine( handPosition, handPosition + forward*1024, MASK_SOLID_BRUSHONLY, pPlayer, COLLISION_GROUP_NONE, &tr );
+	CSoundEnt::InsertSound( SOUND_DANGER_SNIPERONLY, tr.endpos, 384, 0.2, pPlayer );
+}
+
+
+
 void CWeaponFrag::DrawArc( bool primary )
 {
-
+	int idxImpact = NUM_ARC_POINTS-1;
+	float curtime = gpGlobals->curtime;
 	CBaseCombatCharacter *pOwner  = GetOwner();
 	
 	if ( pOwner == NULL )
@@ -520,21 +600,29 @@ void CWeaponFrag::DrawArc( bool primary )
 	pPlayer->EyeVectors(&shootDirection);
 
 	pPlayer->GetVelocity( &throwVelocity, NULL );
-	
-	shootDirection[2] += 0.1f;
-	throwVelocity +=  shootDirection * 1000; // hack: I haven't the slightest why this isn't the same as it is in throw
-	
+	shootDirection[2] += .1f;
+	throwVelocity +=  shootDirection * 1000;
 	throwVelocity *= ARC_TIME_UNIT;  
-	
+
 	Vector vecGravity = Vector(0,0,-GetCurrentGravity() * ARC_TIME_UNIT * ARC_TIME_UNIT);
 	
 	Vector last = origin;
 	bool impacted = false;
-	for ( int i = 0; i < NUM_ARC_POINTS; i ++ )
+
+	// Reset the indicator pulse time
+	float pulseSpeedScale = 1;
+
+	if ( m_pulseStart == 0 )
+		m_pulseStart = curtime + NUM_ARC_POINTS*ARC_TIME_UNIT*pulseSpeedScale; // skip it for the first pass
+
+	if ( curtime > m_pulseStart + NUM_ARC_POINTS*ARC_TIME_UNIT*pulseSpeedScale*2.5)
+		m_pulseStart = curtime;
+	
+	for ( int i = 0; i < NUM_ARC_POINTS - 1; i ++ )
 	{
-		if ( false && impacted )
+		if ( impacted )
 		{
-			m_hArcPoints[i]->TurnOff();
+		 	m_hArcPoints[i]->TurnOff();
 			continue;
 		}
 
@@ -543,29 +631,42 @@ void CWeaponFrag::DrawArc( bool primary )
 		int t = i+1;
 		Vector position = origin + throwVelocity*t + ((t*t+t)*vecGravity) / 2;  
 		
+		
 		m_hArcPoints[i]->TurnOn();
 		m_hArcPoints[i]->SetAbsOrigin(position);
+		float pct = i/(float) NUM_ARC_POINTS;
+		m_hArcPoints[i]->SetBrightness( 80 - 80*pct*pct );
 		
-		float pct = i/(float)NUM_ARC_POINTS;
-		pct *= pct;
+		// show a segment brighter if it fits within the pulse window
+		float elapsed = curtime-m_pulseStart; 
+		int pulseSegment = floor(elapsed / (ARC_TIME_UNIT*pulseSpeedScale));
 		
-		m_hArcPoints[i]->SetBrightness( 165 - 165*pct );
-		m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE);
-
+		if ( i == pulseSegment )
+			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE*2, .2);
+		else 
+			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE, .2);
+		
 		trace_t tr;
 		UTIL_TraceLine(last, position, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
 
-		if ( tr.fraction < 1 ) // segment impacted, place sprite on impact point, change it's color etc
+		if ( tr.fraction < 1 ) // segment impacted, place impact sprite
 		{
 			impacted = true;
-			m_hArcPoints[i]->SetAbsOrigin(tr.endpos);
-			m_hArcPoints[i]->SetScale(ARC_SPRITE_SCALE*2.5);
-			m_hArcPoints[i]->SetBrightness( 150 );
+
+			m_hArcPoints[i]->TurnOff();
+			m_hArcPoints[idxImpact]->SetAbsOrigin(tr.endpos);
+			m_hArcPoints[idxImpact]->TurnOn();
 		}
 
 		last = position;
 	}
+
+	if ( !impacted )
+	{
+		m_hArcPoints[idxImpact]->TurnOff();
+	}
 }
+
 
 void CWeaponFrag::HideArc( )
 {

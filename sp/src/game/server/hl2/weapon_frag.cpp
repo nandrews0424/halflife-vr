@@ -373,6 +373,7 @@ void CWeaponFrag::ItemPostFrame( void )
 				DrawArc(); 		
 				if( !(pOwner->m_nButtons & IN_ATTACK) )
 				{
+					m_bMotionThrow = false; 
 					SendWeaponAnim( ACT_VM_THROW );
 					m_fDrawbackFinished = false;
 					HideArc();
@@ -427,7 +428,6 @@ void CWeaponFrag::CheckThrowPosition( CBasePlayer *pPlayer, const Vector &vecEye
 //-----------------------------------------------------------------------------
 void CWeaponFrag::ThrowGrenade( CBasePlayer *pPlayer )
 {
-	m_bMotionThrow = false;
 	Vector	vecHand = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
 	Vector	vForward, vRight;
 
@@ -514,7 +514,7 @@ void CWeaponFrag::RollGrenade( CBasePlayer *pPlayer )
 
 	WeaponSound( SPECIAL1 );
 
-	m_bRedraw = true;
+	m_bRedraw = true; 
 
 	m_iPrimaryAttacks++;
 	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
@@ -523,15 +523,14 @@ void CWeaponFrag::RollGrenade( CBasePlayer *pPlayer )
 
 
 #define MOTION_CHECK_RATE .02
-#define MOTION_THROW_SCALE 4.33
+#define MOTION_THROW_SCALE 4.66
 void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
 {
-	if ( !release )
+	if ( !release ) // todo: split this out
 	{
 		if ( gpGlobals->curtime > m_lastSample + MOTION_CHECK_RATE )
 		{
-			// just capping the data
-			m_lastPosition = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
+			m_lastPosition = pPlayer->EyeToWeaponOffset();
 			m_lastAngle = pPlayer->EyeAngles();
 			m_lastSample = gpGlobals->curtime; 
 		}
@@ -545,7 +544,7 @@ void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
 	
 	Vector	handPosition = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
 
-	Vector handMovement = handPosition - m_lastPosition;
+	Vector handMovement = pPlayer->EyeToWeaponOffset() - m_lastPosition;
 	QAngle handAngle = pPlayer->EyeAngles();
 	
 	float dt = gpGlobals->curtime - m_lastSample;

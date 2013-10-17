@@ -18,6 +18,8 @@
 #include "tier0/vprof_telemetry.h"
 #include <time.h>
 
+#include "vr/vr_controller.h"
+
 CClientVirtualReality g_ClientVirtualReality;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR( CClientVirtualReality, IClientVirtualReality, 
 	CLIENTVIRTUALREALITY_INTERFACE_VERSION, g_ClientVirtualReality );
@@ -58,7 +60,7 @@ ConVar vr_dont_use_calibration_projection ( "vr_dont_use_calibration_projection"
 
 // HUD config values
 ConVar vr_render_hud_in_world( "vr_render_hud_in_world", "1" );
-ConVar vr_hud_max_fov( "vr_hud_max_fov", "60", FCVAR_ARCHIVE, "Max FOV of the HUD" );
+ConVar vr_hud_max_fov( "vr_hud_max_fov", "70", FCVAR_ARCHIVE, "Max FOV of the Menus" );
 ConVar vr_hud_forward( "vr_hud_forward", "500", FCVAR_ARCHIVE, "Apparent distance of the HUD in inches" );
 ConVar vr_hud_display_ratio( "vr_hud_display_ratio", "0.95", FCVAR_ARCHIVE );
 
@@ -88,6 +90,8 @@ ConVar vr_ipdtest_right_t ( "vr_ipdtest_right_t", "260", FCVAR_ARCHIVE );
 ConVar vr_ipdtest_right_b ( "vr_ipdtest_right_b", "530", FCVAR_ARCHIVE );
 ConVar vr_ipdtest_right_i ( "vr_ipdtest_right_i", "550", FCVAR_ARCHIVE );
 ConVar vr_ipdtest_right_o ( "vr_ipdtest_right_o", "200", FCVAR_ARCHIVE );
+
+ConVar vr_vehicle_aim_mode( "vr_vehicle_aim_mode", "0", FCVAR_ARCHIVE, "Specifies how to aim vehicle weapon ( tracked weapon = 0, view = 1 )" );
 
 
 
@@ -211,6 +215,13 @@ void CalcFovFromProjection ( float *pFov, const VMatrix &proj )
 	// FIXME: hey you know, I could do the Max() series before I call all those expensive atanf()s...
 }
 
+static bool IsMenuUp( )
+{
+	return ((enginevgui && enginevgui->IsGameUIVisible())  || vgui::surface()->IsCursorVisible() );
+}
+
+
+
 
 // --------------------------------------------------------------------
 // construction/destruction
@@ -289,8 +300,9 @@ InitReturnVal_t	CClientVirtualReality::Init()
 	InitReturnVal_t nRetVal = BaseClass::Init();
 	if ( nRetVal != INIT_OK )
 		return nRetVal;
-
+	
 	return INIT_OK;
+
 }
 
 
@@ -444,6 +456,7 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 	// Figure out the in-game "torso" concept, which corresponds to the player's physical torso.
 	m_PlayerTorsoOrigin = pViewMiddle->origin;
 
+	
 	// Ignore what was passed in - it's just the direction the weapon is pointing, which was determined by last frame's HMD orientation!
 	// Instead use our cached value.
 	QAngle torsoAngles = m_PlayerTorsoAngle;
@@ -451,6 +464,11 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 	VMatrix worldFromTorso;
 	AngleMatrix ( torsoAngles, worldFromTorso.As3x4() );
 	worldFromTorso.SetTranslation ( m_PlayerTorsoOrigin );
+
+	// Motion Tracking hooks ....
+	g_MotionTracker()->update(worldFromTorso);
+	g_MotionTracker()->overrideViewOffset(worldFromTorso);
+		
 
 	//// Scale translation e.g. to allow big in-game leans with only a small head movement.
 	//// Clamp HMD movement to a reasonable amount to avoid wallhacks, vis problems, etc.
@@ -463,6 +481,9 @@ bool CClientVirtualReality::OverrideView ( CViewSetup *pViewMiddle, Vector *pVie
 		viewTranslation *= limit;
 		matMideyeZeroFromMideyeCurrent.SetTranslation( viewTranslation );
 	}
+
+
+	
 
 	// Now figure out the three principal matrices: m_TorsoFromMideye, m_WorldFromMidEye, m_WorldFromWeapon
 	// m_TorsoFromMideye is done so that OverridePlayerMotion knows what to do with WASD.
@@ -562,6 +583,13 @@ bool CClientVirtualReality::OverrideWeaponHudAimVectors ( Vector *pAimOrigin, Ve
 
 	Assert ( pAimOrigin != NULL );
 	Assert ( pAimDirection != NULL );
+
+	if ( g_MotionTracker()->isTrackingWeapon() ) 
+	{
+		// todo: g_MotionTracker()->overrideWeaponHudAimVectors(pAimOrigin, pAimDirection);
+		return true;
+	}
+
 
 	// So give it some nice high-fps numbers, not the low-fps ones we get from the game.
 	*pAimOrigin = m_WorldFromWeapon.GetTranslation();
@@ -695,8 +723,8 @@ bool CClientVirtualReality::OverrideStereoView( CViewSetup *pViewMiddle, CViewSe
 	static const float fAspectRatio = 4.f/3.f;
 	float fHFOV = m_fHudHorizontalFov;
 	float fVFOV = m_fHudHorizontalFov / fAspectRatio;
-
-	const float fHudForward = vr_hud_forward.GetFloat();
+	
+	float fHudForward = vr_hud_forward.GetFloat();
 	m_fHudHalfWidth = tan( DEG2RAD( fHFOV * 0.5f ) ) * fHudForward * m_WorldZoomScale;
 	m_fHudHalfHeight = tan( DEG2RAD( fVFOV * 0.5f ) ) * fHudForward * m_WorldZoomScale;
 
@@ -742,10 +770,54 @@ bool CClientVirtualReality::OverrideStereoView( CViewSetup *pViewMiddle, CViewSe
 		MatrixAngles( m_WorldFromWeapon.As3x4(), aimAngles );
 		HudAngles[YAW] = aimAngles[YAW];
 	}
+	
+	// when gui isn't up we'll do custom attached to weapon HUD......
+	if ( ! IsMenuUp( ))
+	{
+		VMatrix m;
+		AngleMatrix(m_PlayerTorsoAngle, m.As3x4());
+		MatrixRotate(m, Vector(0,1,0), 50.f);
+		MatrixAngles( m.As3x4(), HudAngles );
+		HudUpCorrection = g_pSourceVR->GetHudUpCorrection();
+		AngleMatrix ( HudAngles, m_WorldFromHud.As3x4() );
+				
+		m_WorldFromHud.SetTranslation ( m_PlayerViewOrigin );
+		
+		// Remember in source X forwards, Y left, Z up.
+		// We need to transform to a more conventional X right, Y up, Z backwards before doing the projection.
+		VMatrix WorldFromHudView;
+		WorldFromHudView./*X vector*/SetForward ( -m_WorldFromHud.GetLeft() );
+		WorldFromHudView./*Y vector*/SetLeft    ( m_WorldFromHud.GetUp() );
+		WorldFromHudView./*Z vector*/SetUp      ( -m_WorldFromHud.GetForward() );
+		WorldFromHudView.SetTranslation         ( m_PlayerViewOrigin );
+
+		VMatrix HudProjection;
+		HudProjection.Identity();
+
+
+		
+		HudProjection.m[0][0] = 0;
+		HudProjection.m[1][1] = 0;
+		// Z vector is not used/valid, but w is for projection.
+		HudProjection.m[3][2] = -1.0f;
+
+		// This will transform a world point into a homogeneous vector that
+		//  when projected (i.e. divide by w) maps to HUD space [-1,1]
+		m_HudProjectionFromWorld = HudProjection * WorldFromHudView.InverseTR();
+
+		return true;
+	
+	
+	
+	
+	
+	}
+	
 	AngleMatrix ( HudAngles, m_WorldFromHud.As3x4() );
 	m_WorldFromHud.SetTranslation ( m_PlayerViewOrigin );
 	m_WorldFromHud = m_WorldFromHud * HudUpCorrection;
 
+	
 	// Remember in source X forwards, Y left, Z up.
 	// We need to transform to a more conventional X right, Y up, Z backwards before doing the projection.
 	VMatrix WorldFromHudView;
@@ -816,15 +888,17 @@ bool CClientVirtualReality::OverridePlayerMotion( float flInputSampleFrametime, 
 				m_PlayerTorsoAngle[ROLL] = 0.0f;
 				m_PlayerTorsoAngle[PITCH] = 0.0f;
 			}
-
+			
 			AngleMatrix ( m_PlayerTorsoAngle, worldFromTorso.As3x4() );
-
 			// Weapon view = mideye view, so apply that to the torso to find the world view direction.
 			m_WorldFromWeapon = worldFromTorso * m_TorsoFromMideye;
+			
+
+			g_MotionTracker()->overrideWeaponMatrix(m_WorldFromWeapon);
 
 			// ...and we return this new weapon direction as the player's orientation.
 			MatrixAngles( m_WorldFromWeapon.As3x4(), *pNewAngles );
-
+			
 			// Restore the translation.
 			m_WorldFromWeapon.SetTranslation ( vWeaponOrigin );
 		}
@@ -966,10 +1040,26 @@ bool CClientVirtualReality::OverridePlayerMotion( float flInputSampleFrametime, 
 	case HMM_SHOOTFACE_MOVETORSO:
 		{
 			// The motion passed in is meant to be relative to the torso, so jimmy it to be relative to the new weapon aim.
-			VMatrix torsoFromWorld = worldFromTorso.InverseTR();
-			VMatrix newTorsoFromWeapon = torsoFromWorld * m_WorldFromWeapon;
-			newTorsoFromWeapon.SetTranslation ( Vector ( 0.0f, 0.0f, 0.0f ) );
-			*pNewMotion = newTorsoFromWeapon * curMotion;
+			
+			VMatrix torsoFromWorld = worldFromTorso.InverseTR(); 
+			QAngle weap,torso;
+			MatrixAngles(m_WorldFromWeapon.As3x4(), weap);
+			MatrixAngles(worldFromTorso.As3x4(), torso);
+
+			QAngle motionAngle;
+			VectorAngles(curMotion, motionAngle);
+			float dist = curMotion.Length();
+						
+			motionAngle.y += AngleDiff(weap.y, torso.y);
+			AngleVectors(motionAngle, pNewMotion);
+			*pNewMotion = *pNewMotion * dist;
+
+			// if the weapon is inverted, the movement will be applied incorrectly in engine
+			// as it was never possible to invert the view ( which is what the server processes the weapon angle as ) under normal play
+			if ( m_WorldFromWeapon.GetUp().Dot(Vector(0,0,1)) < 0 )
+				pNewMotion->y *= -1;
+			
+
 		}
 		break;
 	case HMM_SHOOTBOUNDEDMOUSE_LOOKFACE_MOVEMOUSE:
@@ -983,6 +1073,11 @@ bool CClientVirtualReality::OverridePlayerMotion( float flInputSampleFrametime, 
 		break;
 	default: Assert ( false ); break;
 	}
+
+	
+	// MotionTrack may need to override the movement vector
+	g_MotionTracker()->overrideMovement(*pNewMotion);
+
 
 	// If the game told us to, recenter the torso yaw to match the weapon
 	if ( m_iAlignTorsoAndViewToWeaponCountdown > 0 )
@@ -1116,8 +1211,14 @@ bool CClientVirtualReality::CurrentlyZoomed()
 //			fixed at this point until the game tells us something 
 //			different.
 // --------------------------------------------------------------------
-void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, const QAngle & angles )
+void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, QAngle & angles )
 {
+	if ( !m_bOverrideTorsoAngle )
+	{
+		Msg("First time executing OverrideTorsoTransform, executing reset home pos to realign head/torso readings\n");
+		engine->ClientCmd( "vr_reset_home_pos" );
+	}
+
 	if( m_iAlignTorsoAndViewToWeaponCountdown > 0 )
 	{
 		m_iAlignTorsoAndViewToWeaponCountdown--;
@@ -1130,9 +1231,10 @@ void CClientVirtualReality::OverrideTorsoTransform( const Vector & position, con
 		// vector while the torso angle is being overridden.
 		m_OverrideTorsoOffset[ YAW ] = -torsoFromHeadAngles[ YAW ];
 	}
-
+		
 	m_bOverrideTorsoAngle = true;
 	m_OverrideTorsoAngle = angles + m_OverrideTorsoOffset;
+
 
 	// overriding pitch and roll isn't allowed to avoid making people sick
 	m_OverrideTorsoAngle[ PITCH ] = 0;
@@ -1162,7 +1264,50 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 {
 	Vector vHalfWidth = m_WorldFromHud.GetLeft() * -m_fHudHalfWidth;
 	Vector vHalfHeight = m_WorldFromHud.GetUp() * m_fHudHalfHeight;
-	Vector vHUDOrigin = m_PlayerViewOrigin + m_WorldFromHud.GetForward() * vr_hud_forward.GetFloat();
+	
+	Vector vHUDOrigin;
+
+	if ( IsMenuUp() )
+	{
+		vHUDOrigin = m_PlayerViewOrigin + m_WorldFromHud.GetForward() * vr_hud_forward.GetFloat();
+	}
+	else
+	{
+		static const float aspectRatio = 4.f/3.f;
+		float width = 24; // vr_hud_width.GetFloat();
+		float height = width / aspectRatio;
+		
+		VMatrix mHud(m_WorldFromWeapon);
+		g_MotionTracker()->overrideWeaponMatrix(mHud);
+				
+		MatrixRotate(mHud, Vector(0,0,1), -90.f);
+
+		vHalfWidth = mHud.GetLeft() * -width/2.f; 
+		vHalfHeight = mHud.GetUp()  *  height/2.f; 
+
+		Vector forward, right, up;
+		AngleVectors(m_PlayerTorsoAngle, &forward, &right, &up);
+
+		Vector weapOffset;
+		g_MotionTracker()->getEyeToWeaponOffset(weapOffset);
+		
+		Vector hudOffset(0,0,0);
+
+		// get hud offset specific to the weapon (coordinates are hud relative, not weapon)
+		CBasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+		if ( pPlayer != NULL )
+		{
+			C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
+			if ( pWeapon )
+			{
+				hudOffset = pWeapon->GetWpnData().weaponHudOffset;
+			}
+		}
+		
+		// Adjust the hud origin per the weapon configuration
+		vHUDOrigin = m_PlayerTorsoOrigin + weapOffset + mHud.GetLeft()*-hudOffset.y + mHud.GetForward()*hudOffset.x + mHud.GetUp()*hudOffset.z + vHalfWidth; 
+	}
+
 
 	*pViewer = m_PlayerViewOrigin;
 	*pUL = vHUDOrigin - vHalfWidth + vHalfHeight;
@@ -1187,12 +1332,19 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 		if ( bTranslucent )
 		{
 			mymat = materials->FindMaterial( "vgui/inworldui", TEXTURE_GROUP_VGUI );
+
+			// this is mounted on the left side of the gun in game, so allow the alpha to be modulated for nice fade in effect...
+			VMatrix mWeap(m_WorldFromWeapon);
+			g_MotionTracker()->overrideWeaponMatrix(mWeap);
+			float alpha = g_MotionTracker()->getHudPanelAlpha(mWeap.GetLeft(), m_WorldFromMidEye.GetForward(), 2.5);
+			mymat->AlphaModulate(alpha);
 		}
 		else
 		{
 			mymat = materials->FindMaterial( "vgui/inworldui_opaque", TEXTURE_GROUP_VGUI );
 		}
 		Assert( !mymat->IsErrorMaterial() );
+			
 
 		IMesh *pMesh = pRenderContext->GetDynamicMesh( true, NULL, NULL, mymat );
 
@@ -1216,7 +1368,9 @@ void CClientVirtualReality::RenderHUDQuad( bool bBlackout, bool bTranslucent )
 		meshBuilder.AdvanceVertexF<VTX_HAVEPOS, 1>();
 
 		meshBuilder.End();
+
 		pMesh->Draw();
+		
 	}
 
 	if( bBlackout )
@@ -1336,7 +1490,7 @@ bool CClientVirtualReality::ProcessCurrentTrackingState( float fGameFOV )
 // Purpose: Returns the projection matrix to use for the HUD
 // --------------------------------------------------------------------
 const VMatrix &CClientVirtualReality::GetHudProjectionFromWorld()
-{
+{ 
 	// This matrix will transform a world-space position into a homogenous HUD-space vector.
 	// So if you divide x+y by w, you will get the position on the HUD in [-1,1] space.
 	return m_HudProjectionFromWorld;
@@ -1348,8 +1502,16 @@ const VMatrix &CClientVirtualReality::GetHudProjectionFromWorld()
 // --------------------------------------------------------------------
 void CClientVirtualReality::GetTorsoRelativeAim( Vector *pPosition, QAngle *pAngles )
 {
-	MatrixAngles( m_TorsoFromMideye.As3x4(), *pAngles, *pPosition );
-	pAngles->y += vr_aim_yaw_offset.GetFloat();
+	if ( vr_vehicle_aim_mode.GetInt() == 0 )
+	{
+		Vector tmp;
+		g_MotionTracker()->updateViewmodelOffset(tmp, *pAngles);
+		pAngles->y -= (m_OverrideTorsoAngle.y - 90);  // account for vehicle orientation changes (-90 is ... weird)
+	}
+	else {
+		MatrixAngles( m_TorsoFromMideye.As3x4(), *pAngles, *pPosition );
+		pAngles->y += vr_aim_yaw_offset.GetFloat();
+	}
 }
 
 
@@ -1378,13 +1540,21 @@ bool CClientVirtualReality::ShouldRenderHUDInWorld()
 // --------------------------------------------------------------------
 void CClientVirtualReality::OverrideViewModelTransform( Vector & vmorigin, QAngle & vmangles, bool bUseLargeOverride ) 
 {
+	if ( g_MotionTracker()->isTrackingWeapon() ) {
+		g_MotionTracker()->updateViewmodelOffset(vmorigin, vmangles); 
+		return;
+	}
+	
 	Vector vForward, vRight, vUp;
 	AngleVectors( vmangles, &vForward, &vRight, &vUp );
 
 	float fForward = bUseLargeOverride ? vr_viewmodel_offset_forward_large.GetFloat() : vr_viewmodel_offset_forward.GetFloat();
 
 	vmorigin += vForward * fForward;
+		
 	MatrixAngles( m_WorldFromWeapon.As3x4(), vmangles );
+
+	
 }
 
 

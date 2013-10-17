@@ -14,6 +14,7 @@
 #include "VGuiMatSurface/IMatSystemSurface.h"
 #include "view.h"
 #include "collisionutils.h"
+#include <vgui_controls/Controls.h>
 #include <vgui/IInput.h>
 #include <vgui/IPanel.h>
 #include <vgui/IVGui.h>
@@ -28,6 +29,10 @@
 #include "vgui_bitmappanel.h"
 #include "filesystem.h"
 #include "iinput.h"
+#include "view_shared.h" // CViewSetup
+#include "iviewrender.h" // view
+#include "client_virtualreality.h"
+#include "vr/vr_controller.h"
 
 #include <vgui/IInputInternal.h>
 extern vgui::IInputInternal *g_InputInternal;
@@ -154,6 +159,29 @@ void FormatViewModelAttachment( Vector &vOrigin, bool bInverse );
 void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin, QAngle *pAngles )
 {
 	C_BaseEntity *pEnt = pAttachedTo->GetBaseEntity();
+	const char* panelName = PanelName();
+	vgui::Panel panel = m_PanelWrapper.GetPanel();
+		
+	if ( Q_strcmp(panelName, "health_screen") == 0 )
+	{
+		QAngle weapAngles = pEnt->GetAbsAngles();
+		Vector weapForward, weapRight, weapUp;
+		AngleVectors(weapAngles, &weapForward, &weapRight, &weapUp);
+		
+		VMatrix worldFromPanel;
+		AngleMatrix(weapAngles, worldFromPanel.As3x4());
+		MatrixRotate(worldFromPanel, Vector(0, 0, 1), 180.f);
+		MatrixRotate(worldFromPanel, Vector(1, 0, 0), -90.f);
+		MatrixAngles(worldFromPanel.As3x4(), *pAngles);
+	
+		// move it right and over
+		*pOrigin = pEnt->GetAbsOrigin() + weapRight*1.75 + weapUp*2.3 + weapForward*5;
+		
+		return;
+	}
+	
+	//todo: set alpha per view ... m_PanelWrapper.GetPanel()->SetAlpha(200);
+	
 	if (pEnt && (m_nAttachmentIndex > 0))
 	{
 		{
@@ -170,6 +198,9 @@ void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin,
 	{
 		BaseClass::GetAimEntOrigin( pAttachedTo, pOrigin, pAngles );
 	}
+
+	// Msg("%s origin %.1f %.1f %.1f angles %.1f %.1f %.1f \n", PanelName(), pOrigin->x, pOrigin->y, pOrigin->z, pAngles->x, pAngles->y, pAngles->z);
+
 }
 
 //-----------------------------------------------------------------------------
@@ -567,7 +598,7 @@ int	C_VGuiScreen::DrawModel( int flags )
 	vgui::Panel *pPanel = m_PanelWrapper.GetPanel();
 	if (!pPanel || !IsActive())
 		return 0;
-	
+
 	// Don't bother drawing stuff not visible to me...
 	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 	if (!pLocalPlayer || !IsVisibleToTeam(pLocalPlayer->GetTeamNumber()) )
@@ -586,11 +617,39 @@ int	C_VGuiScreen::DrawModel( int flags )
 	// FIXME: Can this be cached off?
 	ComputePanelToWorld();
 
+	/*if( m_fScreenFlags & VGUI_SCREEN_ATTACHED_TO_VIEWMODEL )
+	{
+		Msg("Rendering to view model \n ");
+
+		CMatRenderContextPtr pRenderContext( materials );
+		pRenderContext->MatrixMode( MATERIAL_PROJECTION );
+		pRenderContext->PushMatrix();
+		CViewSetup vmView( *view->GetPlayerViewSetup() );
+		vmView.zNear = vmView.zNearViewmodel;
+		vmView.zFar  = vmView.zFarViewmodel;
+		vmView.fov   = vmView.fovViewmodel;
+		render->Push3DView( vmView, 0, NULL, view->GetFrustum() );
+		pRenderContext->DepthRange( 0.0f, 0.1f );
+		pRenderContext.SafeRelease();
+	}*/
+	
+
 	g_pMatSystemSurface->DrawPanelIn3DSpace( pPanel->GetVPanel(), m_PanelToWorld, 
 		m_nPixelWidth, m_nPixelHeight, m_flWidth, m_flHeight );
 
 	// Finally, a pass to set the z buffer...
 	DrawScreenOverlay();
+
+	
+	/*if( m_fScreenFlags & VGUI_SCREEN_ATTACHED_TO_VIEWMODEL )
+	{
+		CMatRenderContextPtr pRenderContext( materials );
+		pRenderContext->DepthRange( 0.0, 1.0 );
+		render->PopView( view->GetFrustum() );
+		pRenderContext->MatrixMode( MATERIAL_PROJECTION );
+		pRenderContext->PopMatrix();
+		pRenderContext.SafeRelease();
+	}*/
 
 	return 1;
 }

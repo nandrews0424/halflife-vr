@@ -45,6 +45,7 @@ protected:
 
 	int	m_nShotsFired;	// Number of consecutive shots fired
 
+	float	m_flLastAttackTime;
 	float	m_flNextSoundTime;	// real-time clock of when to make next sound
 };
 

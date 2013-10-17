@@ -9,7 +9,7 @@
 #include "tf_gamerules.h"
 #endif
 
-#include <isixense.h>
+#include <sixense.h>
 #include <sixense_math.hpp>
 #include <sixense_utils/interfaces.hpp>
 

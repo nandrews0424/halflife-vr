@@ -34,6 +34,10 @@
 #define ARC_SPRITE "HUD/ThrowArc.vmt"
 #define ARC_SPRITE_IMPACT "HUD/ThrowImpact.vmt"
 
+static ConVar mt_grenade_throw_scale( "mt_grenade_throw_scale", "1", FCVAR_ARCHIVE, "Scales grenade motion throws (higher makes you throw it further)");
+
+#define MOTION_THROW_SCALE mt_grenade_throw_scale.GetFloat()*5
+
 //-----------------------------------------------------------------------------
 // Fragmentation grenades
 //-----------------------------------------------------------------------------
@@ -520,10 +524,7 @@ void CWeaponFrag::RollGrenade( CBasePlayer *pPlayer )
 	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
 }
 
-
-
 #define MOTION_CHECK_RATE .02
-#define MOTION_THROW_SCALE 4.66
 void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
 {
 	if ( !release ) // todo: split this out
@@ -559,7 +560,7 @@ void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
 	vecThrow += ( handMovement * MOTION_THROW_SCALE ) / dt;
 
 	Fraggrenade_Create( handPosition, handAngle, vecThrow, angularImpulse, pPlayer, GRENADE_TIMER, false );
-	// TODO:  DecrementAmmo( pPlayer );
+	DecrementAmmo( pPlayer );
 	
 	m_bRedraw = true;
 	WeaponSound( SINGLE );

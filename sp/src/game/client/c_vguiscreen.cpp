@@ -183,18 +183,18 @@ void C_VGuiScreen::GetAimEntOrigin( IClientEntity *pAttachedTo, Vector *pOrigin,
 		int iAttachment = vm->LookupAttachment( "hud_right" );
 		vm->GetAttachment( iAttachment, vmOrigin, vmAngles);
 			
-		/*
-		VMatrix worldFromPanel;
-		AngleMatrix(weapAngles, worldFromPanel.As3x4());
-		MatrixRotate(worldFromPanel, Vector(0, 0, 1), 180.f);
-		MatrixRotate(worldFromPanel, Vector(1, 0, 0), -90.f);
-		MatrixAngles(worldFromPanel.As3x4(), *pAngles);
-		*/ 
 		
+		VMatrix worldFromPanel;
+		AngleMatrix(vmAngles, worldFromPanel.As3x4());
+		MatrixRotate(worldFromPanel, Vector(1, 0, 0), 180.f);
+		MatrixRotate(worldFromPanel, Vector(0, 1, 0), 90.f);
+		MatrixAngles(worldFromPanel.As3x4(), *pAngles);
+		
+		Vector forward,up,right;
+		AngleVectors(vmAngles, &right,&up,&forward); // these are not the normal orientations due to the rotations above
+		
+		*pOrigin = vmOrigin + up*-1 + forward*-5;
 
-		// TODO: set pAngles
-
-		*pOrigin = pEnt->GetAbsOrigin() + weapRight*1.75 + weapUp*2.3 + weapForward*5;
 		
 		return;
 	}

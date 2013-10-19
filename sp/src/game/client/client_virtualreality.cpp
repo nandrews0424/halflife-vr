@@ -1265,7 +1265,8 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 	Vector vHalfWidth = m_WorldFromHud.GetLeft() * -m_fHudHalfWidth;
 	Vector vHalfHeight = m_WorldFromHud.GetUp() * m_fHudHalfHeight;
 	
-	Vector vHUDOrigin;
+	QAngle vmAngles;
+	Vector vmOrigin, hudRight, hudForward, hudUp, vHUDOrigin;
 
 	if ( IsMenuUp() )
 	{
@@ -1273,26 +1274,23 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 	}
 	else
 	{
-		Vector vmOrigin, hudRight, hudForward, hudUp, hudOffset;
-
+		
 		CBasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
 		if ( pPlayer != NULL )
 		{
 			C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
 			if ( pWeapon )
 			{
-				// default hud offset
-				hudOffset = pWeapon->GetWpnData().weaponHudOffset;
 				C_BaseViewModel *vm = pPlayer->GetViewModel(0);
 				if ( vm )
 				{
-					QAngle vmAngles;			
-					Vector vmOrigin,dist,vmForward;
-					
-					// TODO: need a specific hud attachment "hud_left" or something similar
-					int iAttachment = vm->LookupAttachment( "muzzle" );
+					int iAttachment = vm->LookupAttachment( "hud_left" );
 					vm->GetAttachment( iAttachment, vmOrigin, vmAngles);
-					AngleVectors(vmAngles, &hudForward, &hudRight, &hudUp);
+					
+					VMatrix worldFromPanel;
+					AngleMatrix(vmAngles, worldFromPanel.As3x4());
+					MatrixRotate(worldFromPanel, Vector(1, 0, 0), -90.f);
+					worldFromPanel.GetBasisVectors(hudForward, hudRight, hudUp);
 					
 					static const float aspectRatio = 4.f/3.f;
 					float width = 24; // vr_hud_width.GetFloat();
@@ -1302,12 +1300,10 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 					vHalfHeight = hudUp  *  height/2.f; 
 				}
 			}
-		}
+		}		
 		
-		// Adjust the hud origin per the weapon configuration
-		vHUDOrigin = vmOrigin + hudRight*hudOffset.y + hudForward*hudOffset.x + hudUp*hudOffset.z + vHalfWidth; 
+		vHUDOrigin = vmOrigin + hudRight*-5 + hudForward + hudUp*-1 + vHalfWidth; 
 	}
-
 
 	*pViewer = m_PlayerViewOrigin;
 	*pUL = vHUDOrigin - vHalfWidth + vHalfHeight;

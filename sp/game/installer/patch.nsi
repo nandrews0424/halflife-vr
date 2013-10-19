@@ -1,5 +1,5 @@
 !include "MUI2.nsh"
-!define VERSION '1.2.1'
+!define VERSION '1.2.3'
 !define DEPENDENCY_VERSION '1.2.0'
 
 Name "Half-Life VR"
@@ -46,7 +46,8 @@ Section ""
 	SetOutPath $INSTDIR\halflife-vr\materials
 	File /r ..\mod_hl2\materials\*
 	SetOutPath $INSTDIR\halflife-vr\cfg
-	File /r ..\mod_hl2\cfg\*
+	;File /r ..\mod_hl2\cfg\*
+	File /r ..\mod_hl2\cfg\autoexec.cfg
 	SetOutPath $INSTDIR\halflife-vr\bin
 	File /r ..\mod_hl2\bin\*.dll
 	SetOutPath $INSTDIR\halflife-vr\resource
@@ -60,7 +61,8 @@ Section ""
 	SetOutPath $INSTDIR\halflife-vr-ep1\materials
 	File /r ..\mod_episodic\materials\*
 	SetOutPath $INSTDIR\halflife-vr-ep1\cfg
-	File /r ..\mod_episodic\cfg\*
+	;File /r ..\mod_episodic\cfg\*
+	File /r ..\mod_episodic\cfg\autoexec.cfg
 	SetOutPath $INSTDIR\halflife-vr-ep1\bin
 	File /r ..\mod_episodic\bin\*.dll
 	SetOutPath $INSTDIR\halflife-vr-ep1\resource

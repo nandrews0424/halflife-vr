@@ -2105,7 +2105,15 @@ typedef enum
 	// this is the end of the global activities, private per-monster activities start here.
 	LAST_SHARED_ACTIVITY,
 
-	ACT_VM_HITDYNAMIC 
+	// HLVR animations
+	ACT_VM_HITDYNAMIC,
+	ACT_VM_RELOAD_RELEASE_DYNAMIC,
+	ACT_VM_RELOAD_OPEN_DYNAMIC,
+	ACT_VM_RELOAD_FULL_DYNAMIC,
+	ACT_VM_RELOAD_EMPTY_DYNAMIC,
+	ACT_VM_RELOAD_INSERT_DYNAMIC,
+	ACT_VM_RELOAD_CLOSE_DYNAMIC
+	
 
 } Activity;
 

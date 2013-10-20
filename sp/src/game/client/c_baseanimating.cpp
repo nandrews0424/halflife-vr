@@ -3854,7 +3854,7 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 				
 				if( GetAttachment( 2, attachOrigin, attachAngles ) )
 				{
-					tempents->EjectBrass( attachOrigin, attachAngles, GetAbsAngles(), atoi( options ) );
+					tempents->EjectBrass( attachOrigin, attachAngles, GetAbsAngles(), atoi( options ), false );
 				}
 			}
 		}

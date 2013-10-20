@@ -1,6 +1,6 @@
 "UnlitGeneric"
 {
-	"$baseTexture" "HUD/ThrowArc02"
+	"$baseTexture" "HUD/ThrowDot"
 	"$translucent" 1
 	"$alpha" 1
 	"$vertexalpha" "1"

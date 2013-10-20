@@ -19,6 +19,7 @@
 #include "engine/IEngineSound.h"
 #include "te_effect_dispatch.h"
 #include "gamestats.h"
+#include "movevars_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -57,6 +58,7 @@ private:
 	bool	ShouldOpenCylinder( CBasePlayer* pPlayer );
 	bool	ShouldCloseCylinder( CBasePlayer* pPlayer );
 	bool	ShouldEmptyShells( CBasePlayer* pPlayer );
+	void	EmptyShells( CBasePlayer* pPlayer );
 	bool	GetLocalAcceleration( CBasePlayer* pPlayer, Vector& acceleration );
 	
 	bool m_bCylinderLatched;
@@ -208,8 +210,16 @@ void CWeapon357::ItemPostFrame()
 			
 			if ( ShouldEmptyShells( pPlayer ))
 			{
+				EmptyShells( pPlayer );
+
 				SendWeaponAnim( ACT_VM_RELOAD_EMPTY_DYNAMIC );  
 				SetNextReloadActivity( ACT_VM_RELOAD_INSERT_DYNAMIC  );
+			}
+			else if ( ShouldCloseCylinder( pPlayer ))
+			{
+				// just closed without a reload
+				SendWeaponAnim( ACT_VM_RELOAD_CLOSE_DYNAMIC );  
+				SetNextReloadActivity( ACT_VM_RELOAD  );
 			}
 		}
 		else if ( m_NextReloadActivity == ACT_VM_RELOAD_INSERT_DYNAMIC  && LastReloadActivityDone() )
@@ -231,8 +241,14 @@ void CWeapon357::ItemPostFrame()
 		}
 		else if ( m_NextReloadActivity == ACT_VM_RELOAD && LastReloadActivityDone() ) 
 		{
-			m_bCylinderLatched = true;
-			DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_IDLE );
+			m_bCylinderLatched		= true;
+			m_flTimeWeaponIdle		= gpGlobals->curtime;
+			m_flNextPrimaryAttack	= gpGlobals->curtime;
+
+			if ( m_bFullNewShells )
+			{
+				DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_IDLE );
+			}
 		}
 	}
 
@@ -259,16 +275,17 @@ bool CWeapon357::GetLocalAcceleration( CBasePlayer* pPlayer, Vector& localAccele
 	float elapsed = gpGlobals->curtime - m_fLastUpdate;
 	Vector velocity = (currentOrigin - m_lastOrigin) / elapsed;
 	Vector accel = velocity - m_lastVelocity;	
-
+	
+	// scaled down the effects of the gravity by half by feel
+	float gravity = GetCurrentGravity() * elapsed*.5;  // 9.0
+	accel += Vector(0,0,gravity); 
+	
 	m_lastVelocity = velocity;
 	
 	// translate to weapon space.
 	VMatrix worldFromWeapon;
-	AngleMatrix(GetAbsAngles(), worldFromWeapon.As3x4());
-	
+	AngleMatrix(pPlayer->EyeAngles(), worldFromWeapon.As3x4());
 	localAcceleration = worldFromWeapon.InverseTR() * accel;
-	
-	// TODO: include gravitational force 
 
 	// store of values for next frame ( Abs on both )
 	m_lastVelocity = velocity;
@@ -283,26 +300,18 @@ bool CWeapon357::ShouldOpenCylinder( CBasePlayer* pPlayer )
 {
 	Vector localAcceleration;
 	if ( GetLocalAcceleration( pPlayer, localAcceleration) ) 
-	{
-		return localAcceleration.y < -4.5f;
-	}
-	else
-	{
-		return false;
-	}
+		return localAcceleration.y < -9.75f;
+
+	return false;
 }
 
 bool CWeapon357::ShouldCloseCylinder( CBasePlayer* pPlayer )
 {
 	Vector localAcceleration;
 	if ( GetLocalAcceleration( pPlayer, localAcceleration) ) 
-	{
-		return localAcceleration.y > 4.5f;
-	}
-	else
-	{
-		return false;
-	}
+		return localAcceleration.y > 7.5f;
+
+	return false;
 }
 
 bool CWeapon357::ShouldEmptyShells( CBasePlayer* pPlayer )
@@ -315,6 +324,12 @@ bool CWeapon357::ShouldEmptyShells( CBasePlayer* pPlayer )
 }
 
 
+void CWeapon357::EmptyShells( CBasePlayer* pPlayer )
+{
+	CEffectData data;
+	data.m_nEntIndex = entindex();
+	DispatchEffect( "MagnumShellEject", data );
+}
 
 
 //-----------------------------------------------------------------------------
@@ -332,7 +347,7 @@ void CWeapon357::PrimaryAttack( void )
 
 	if ( m_iClip1 <= 0 )
 	{
-		if ( !m_bFireOnEmpty )
+		if ( false && !m_bFireOnEmpty )
 		{
 			Reload();
 		}

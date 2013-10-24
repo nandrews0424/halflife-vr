@@ -87,9 +87,9 @@ ConVar hl2_sprintspeed( "hl2_sprintspeed", "320" );
 ConVar hl2_darkness_flashlight_factor ( "hl2_darkness_flashlight_factor", "1" );
 
 #ifdef HL2MP
-	#define	HL2_WALK_SPEED 150
-	#define	HL2_NORM_SPEED 190
-	#define	HL2_SPRINT_SPEED 320
+	#define	HL2_WALK_SPEED 100
+	#define	HL2_NORM_SPEED 125
+	#define	HL2_SPRINT_SPEED 240
 #else
 	#define	HL2_WALK_SPEED hl2_walkspeed.GetFloat()
 	#define	HL2_NORM_SPEED hl2_normspeed.GetFloat()
@@ -108,8 +108,8 @@ ConVar autoaim_unlock_target( "autoaim_unlock_target", "0.8666" );
 
 ConVar sv_stickysprint("sv_stickysprint", "0", FCVAR_ARCHIVE | FCVAR_ARCHIVE_XBOX);
 
-#define	FLASH_DRAIN_TIME	 .5	// 100 units / 90 secs
-#define	FLASH_CHARGE_TIME	 50.0f	// 100 units / 2 secs
+#define	FLASH_DRAIN_TIME	 .1	// 100 units / 90 secs
+#define	FLASH_CHARGE_TIME	 70.0f	// 100 units / 2 secs
 
 
 //==============================================================================================

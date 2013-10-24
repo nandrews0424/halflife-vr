@@ -43,7 +43,7 @@ ConVar log_verbose_interval( "log_verbose_interval", "3.0", FCVAR_GAMEDLL, "Dete
 #endif // CLIENT_DLL
 
 static CViewVectors g_DefaultViewVectors(
-	Vector( 0, 0, 68 ),			//VEC_VIEW (m_vView)
+	Vector( 0, 0, 70 ),			//VEC_VIEW (m_vView)
 								
 	Vector(-16, -16, 0 ),		//VEC_HULL_MIN (m_vHullMin)
 	Vector( 16,  16, 72 ),		//VEC_HULL_MAX (m_vHullMax)

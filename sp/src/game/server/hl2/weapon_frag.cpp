@@ -34,6 +34,10 @@
 #define ARC_SPRITE "HUD/ThrowArc.vmt"
 #define ARC_SPRITE_IMPACT "HUD/ThrowImpact.vmt"
 
+static ConVar mt_grenade_throw_scale( "mt_grenade_throw_scale", "1", FCVAR_ARCHIVE, "Scales grenade motion throws (higher makes you throw it further)");
+
+#define MOTION_THROW_SCALE mt_grenade_throw_scale.GetFloat()*5
+
 //-----------------------------------------------------------------------------
 // Fragmentation grenades
 //-----------------------------------------------------------------------------
@@ -373,6 +377,7 @@ void CWeaponFrag::ItemPostFrame( void )
 				DrawArc(); 		
 				if( !(pOwner->m_nButtons & IN_ATTACK) )
 				{
+					m_bMotionThrow = false; 
 					SendWeaponAnim( ACT_VM_THROW );
 					m_fDrawbackFinished = false;
 					HideArc();
@@ -427,7 +432,6 @@ void CWeaponFrag::CheckThrowPosition( CBasePlayer *pPlayer, const Vector &vecEye
 //-----------------------------------------------------------------------------
 void CWeaponFrag::ThrowGrenade( CBasePlayer *pPlayer )
 {
-	m_bMotionThrow = false;
 	Vector	vecHand = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
 	Vector	vForward, vRight;
 
@@ -514,24 +518,20 @@ void CWeaponFrag::RollGrenade( CBasePlayer *pPlayer )
 
 	WeaponSound( SPECIAL1 );
 
-	m_bRedraw = true;
+	m_bRedraw = true; 
 
 	m_iPrimaryAttacks++;
 	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
 }
 
-
-
 #define MOTION_CHECK_RATE .02
-#define MOTION_THROW_SCALE 4.33
 void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
 {
-	if ( !release )
+	if ( !release ) // todo: split this out
 	{
 		if ( gpGlobals->curtime > m_lastSample + MOTION_CHECK_RATE )
 		{
-			// just capping the data
-			m_lastPosition = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
+			m_lastPosition = pPlayer->EyeToWeaponOffset();
 			m_lastAngle = pPlayer->EyeAngles();
 			m_lastSample = gpGlobals->curtime; 
 		}
@@ -545,7 +545,7 @@ void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
 	
 	Vector	handPosition = pPlayer->EyePosition() + pPlayer->EyeToWeaponOffset();
 
-	Vector handMovement = handPosition - m_lastPosition;
+	Vector handMovement = pPlayer->EyeToWeaponOffset() - m_lastPosition;
 	QAngle handAngle = pPlayer->EyeAngles();
 	
 	float dt = gpGlobals->curtime - m_lastSample;
@@ -560,7 +560,7 @@ void CWeaponFrag::MotionThrowGrenade( CBasePlayer *pPlayer, bool release )
 	vecThrow += ( handMovement * MOTION_THROW_SCALE ) / dt;
 
 	Fraggrenade_Create( handPosition, handAngle, vecThrow, angularImpulse, pPlayer, GRENADE_TIMER, false );
-	// TODO:  DecrementAmmo( pPlayer );
+	DecrementAmmo( pPlayer );
 	
 	m_bRedraw = true;
 	WeaponSound( SINGLE );

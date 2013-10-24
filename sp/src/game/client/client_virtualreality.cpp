@@ -1265,7 +1265,8 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 	Vector vHalfWidth = m_WorldFromHud.GetLeft() * -m_fHudHalfWidth;
 	Vector vHalfHeight = m_WorldFromHud.GetUp() * m_fHudHalfHeight;
 	
-	Vector vHUDOrigin;
+	QAngle vmAngles;
+	Vector vmOrigin, hudRight, hudForward, hudUp, vHUDOrigin;
 
 	if ( IsMenuUp() )
 	{
@@ -1273,41 +1274,36 @@ void CClientVirtualReality::GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *
 	}
 	else
 	{
-		static const float aspectRatio = 4.f/3.f;
-		float width = 24; // vr_hud_width.GetFloat();
-		float height = width / aspectRatio;
 		
-		VMatrix mHud(m_WorldFromWeapon);
-		g_MotionTracker()->overrideWeaponMatrix(mHud);
-				
-		MatrixRotate(mHud, Vector(0,0,1), -90.f);
-
-		vHalfWidth = mHud.GetLeft() * -width/2.f; 
-		vHalfHeight = mHud.GetUp()  *  height/2.f; 
-
-		Vector forward, right, up;
-		AngleVectors(m_PlayerTorsoAngle, &forward, &right, &up);
-
-		Vector weapOffset;
-		g_MotionTracker()->getEyeToWeaponOffset(weapOffset);
-		
-		Vector hudOffset(0,0,0);
-
-		// get hud offset specific to the weapon (coordinates are hud relative, not weapon)
 		CBasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
 		if ( pPlayer != NULL )
 		{
 			C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
 			if ( pWeapon )
 			{
-				hudOffset = pWeapon->GetWpnData().weaponHudOffset;
+				C_BaseViewModel *vm = pPlayer->GetViewModel(0);
+				if ( vm )
+				{
+					int iAttachment = vm->LookupAttachment( "hud_left" );
+					vm->GetAttachment( iAttachment, vmOrigin, vmAngles);
+					
+					VMatrix worldFromPanel;
+					AngleMatrix(vmAngles, worldFromPanel.As3x4());
+					MatrixRotate(worldFromPanel, Vector(1, 0, 0), -90.f);
+					worldFromPanel.GetBasisVectors(hudForward, hudRight, hudUp);
+					
+					static const float aspectRatio = 4.f/3.f;
+					float width = 24; // vr_hud_width.GetFloat();
+					float height = width / aspectRatio;
+						
+					vHalfWidth = hudRight * width/2.f; 
+					vHalfHeight = hudUp  *  height/2.f; 
+				}
 			}
-		}
+		}		
 		
-		// Adjust the hud origin per the weapon configuration
-		vHUDOrigin = m_PlayerTorsoOrigin + weapOffset + mHud.GetLeft()*-hudOffset.y + mHud.GetForward()*hudOffset.x + mHud.GetUp()*hudOffset.z + vHalfWidth; 
+		vHUDOrigin = vmOrigin + hudRight*-5 + hudForward + hudUp*-1 + vHalfWidth; 
 	}
-
 
 	*pViewer = m_PlayerViewOrigin;
 	*pUL = vHUDOrigin - vHalfWidth + vHalfHeight;

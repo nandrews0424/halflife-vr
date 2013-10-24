@@ -19,9 +19,13 @@
 #include "engine/IEngineSound.h"
 #include "te_effect_dispatch.h"
 #include "gamestats.h"
+#include "movevars_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+
+#define MOTION_RELOAD true
 
 //-----------------------------------------------------------------------------
 // CWeapon357
@@ -36,8 +40,11 @@ public:
 
 	void	Precache( void );
 	void	PrimaryAttack( void );
+	bool	Reload( void );
 	void	Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
 
+	void	ItemPostFrame();
+	
 	float	WeaponAutoAimScale()	{ return 0.6f; }
 
 	DECLARE_SERVERCLASS();
@@ -46,6 +53,33 @@ public:
 private:
 	float m_iShotsFired;
 	float m_iLastShotTime;
+	
+	// motion reload
+	bool	ShouldOpenCylinder( CBasePlayer* pPlayer );
+	bool	ShouldCloseCylinder( CBasePlayer* pPlayer );
+	bool	ShouldEmptyShells( CBasePlayer* pPlayer );
+	void	EmptyShells( CBasePlayer* pPlayer );
+	bool	GetLocalAcceleration( CBasePlayer* pPlayer, Vector& acceleration );
+	
+	bool m_bCylinderLatched;
+	float m_fLastReloadActivityDone;
+	Activity m_NextReloadActivity;
+	bool m_bFullNewShells;
+	
+	inline bool LastReloadActivityDone() { return gpGlobals->curtime > m_fLastReloadActivityDone; }
+	inline void SetNextReloadActivity(Activity a) 
+	{ 
+		m_NextReloadActivity = a;
+		m_fLastReloadActivityDone = gpGlobals->curtime + SequenceDuration(); 
+	}
+	
+	float  m_fLastUpdate;
+	Vector m_lastOrigin;
+	QAngle m_lastAngle;
+	Vector m_lastVelocity;
+
+
+
 
 };
 
@@ -66,9 +100,16 @@ CWeapon357::CWeapon357( void )
 {
 	m_bReloadsSingly	= false;
 	m_bFiresUnderwater	= false;
+	m_bFullNewShells = false;
+
+	m_bCylinderLatched = true;
+	m_NextReloadActivity = ACT_VM_RELOAD_RELEASE_DYNAMIC;
+	
+	m_lastVelocity.Init();
 
 	m_iShotsFired = 0;
 	m_iLastShotTime = 0;
+	m_fLastUpdate = -1;
 }
 
 void CWeapon357::Precache()
@@ -106,6 +147,194 @@ void CWeapon357::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChara
 	}
 }
 
+
+
+bool CWeapon357::Reload( void )
+{
+	if ( !MOTION_RELOAD )
+		return BaseClass::Reload();
+	
+	CBaseCombatCharacter *pOwner  = GetOwner();
+
+	if ( pOwner == NULL )
+		return BaseClass::Reload();
+
+	CBasePlayer *pPlayer = ToBasePlayer( pOwner );
+	
+	if ( pPlayer == NULL )
+		return BaseClass::Reload();
+		
+	
+	if ( m_bCylinderLatched == true )
+	{
+		m_bCylinderLatched = false;
+		m_flTimeWeaponIdle		= FLT_MAX;
+		m_flNextPrimaryAttack	= FLT_MAX;
+				
+		SendWeaponAnim( ACT_VM_RELOAD_RELEASE_DYNAMIC );
+		SetNextReloadActivity( ACT_VM_RELOAD_OPEN_DYNAMIC );
+	}
+
+	return true;
+}
+
+
+void CWeapon357::ItemPostFrame()
+{
+	CBaseCombatCharacter *pOwner  = GetOwner();
+
+	if ( pOwner == NULL )
+		return;
+
+	CBasePlayer *pPlayer = ToBasePlayer( pOwner );
+	
+	if ( pPlayer == NULL )
+		return;
+	
+	if ( !m_bCylinderLatched )
+	{
+
+		if ( m_NextReloadActivity == ACT_VM_RELOAD_OPEN_DYNAMIC && LastReloadActivityDone() )
+		{
+			// while open, keep running the same animation
+			SendWeaponAnim( ACT_VM_RELOAD_IDLE_DYNAMIC  );  
+			
+			if ( ShouldOpenCylinder( pPlayer ) )
+			{
+				SendWeaponAnim( ACT_VM_RELOAD_OPEN_DYNAMIC );
+				SetNextReloadActivity(ACT_VM_RELOAD_FULL_DYNAMIC);
+				m_bFullNewShells = false;
+			}
+		}
+		else if (  m_NextReloadActivity == ACT_VM_RELOAD_FULL_DYNAMIC && !m_bFullNewShells && LastReloadActivityDone() ) 
+		{
+			// while open, keep running the same animation
+			SendWeaponAnim( ACT_VM_RELOAD_FULL_DYNAMIC );
+			
+			if ( ShouldEmptyShells( pPlayer ))
+			{
+				EmptyShells( pPlayer );
+
+				SendWeaponAnim( ACT_VM_RELOAD_EMPTY_DYNAMIC );  
+				SetNextReloadActivity( ACT_VM_RELOAD_INSERT_DYNAMIC  );
+			}
+			else if ( ShouldCloseCylinder( pPlayer ))
+			{
+				// just closed without a reload
+				SendWeaponAnim( ACT_VM_RELOAD_CLOSE_DYNAMIC );  
+				SetNextReloadActivity( ACT_VM_RELOAD  );
+			}
+		}
+		else if ( m_NextReloadActivity == ACT_VM_RELOAD_INSERT_DYNAMIC  && LastReloadActivityDone() )
+		{
+			SendWeaponAnim( ACT_VM_RELOAD_INSERT_DYNAMIC );
+			SetNextReloadActivity(ACT_VM_RELOAD_FULL_DYNAMIC);
+			m_bFullNewShells = true;
+		} 
+		else if (  m_NextReloadActivity == ACT_VM_RELOAD_FULL_DYNAMIC && m_bFullNewShells && LastReloadActivityDone() ) 
+		{
+			// while open, keep running the same animation
+			SendWeaponAnim( ACT_VM_RELOAD_FULL_DYNAMIC );  
+			
+			if ( ShouldCloseCylinder( pPlayer ))
+			{
+				SendWeaponAnim( ACT_VM_RELOAD_CLOSE_DYNAMIC );  
+				SetNextReloadActivity( ACT_VM_RELOAD  );
+			}
+		}
+		else if ( m_NextReloadActivity == ACT_VM_RELOAD && LastReloadActivityDone() ) 
+		{
+			m_bCylinderLatched		= true;
+			m_flTimeWeaponIdle		= gpGlobals->curtime;
+			m_flNextPrimaryAttack	= gpGlobals->curtime;
+
+			if ( m_bFullNewShells )
+			{
+				DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_IDLE );
+			}
+		}
+	}
+
+	BaseClass::ItemPostFrame();	
+}
+
+#define MOTION_CHECK_RATE .02
+
+bool CWeapon357::GetLocalAcceleration( CBasePlayer* pPlayer, Vector& localAcceleration )
+{
+	Vector currentOrigin = pPlayer->EyeToWeaponOffset();
+
+	// first reading of this stream should reinitialize
+	if ( gpGlobals->curtime > m_fLastUpdate + 5*MOTION_CHECK_RATE ) {
+		m_lastOrigin = currentOrigin;
+		m_fLastUpdate = gpGlobals->curtime;
+		return false;
+	}
+	else if ( gpGlobals->curtime < m_fLastUpdate + MOTION_CHECK_RATE )
+	{
+		return false; // we don't check every time
+	}
+			
+	float elapsed = gpGlobals->curtime - m_fLastUpdate;
+	Vector velocity = (currentOrigin - m_lastOrigin) / elapsed;
+	Vector accel = velocity - m_lastVelocity;	
+	
+	// scaled down the effects of the gravity by half by feel
+	float gravity = GetCurrentGravity() * elapsed*.5;  // 9.0
+	accel += Vector(0,0,gravity); 
+	
+	m_lastVelocity = velocity;
+	
+	// translate to weapon space. 
+	VMatrix worldFromWeapon;
+	AngleMatrix(pPlayer->EyeAngles(), worldFromWeapon.As3x4());
+	localAcceleration = worldFromWeapon.InverseTR() * accel;
+
+	// store of values for next frame ( Abs on both )
+	m_lastVelocity = velocity;
+	m_lastOrigin = currentOrigin;
+	m_fLastUpdate = gpGlobals->curtime;
+
+	return true;
+}
+
+
+bool CWeapon357::ShouldOpenCylinder( CBasePlayer* pPlayer )
+{
+	Vector localAcceleration;
+	if ( GetLocalAcceleration( pPlayer, localAcceleration) ) 
+		return localAcceleration.y < -9.75f;
+
+	return false;
+}
+
+bool CWeapon357::ShouldCloseCylinder( CBasePlayer* pPlayer )
+{
+	Vector localAcceleration;
+	if ( GetLocalAcceleration( pPlayer, localAcceleration) ) 
+		return localAcceleration.y > 7.5f;
+
+	return false;
+}
+
+bool CWeapon357::ShouldEmptyShells( CBasePlayer* pPlayer )
+{
+	Vector aimDirection;
+	pPlayer->EyeVectors(&aimDirection);
+	Vector up(0,0,1);
+
+	return up.Dot(aimDirection) > .75f;
+}
+
+
+void CWeapon357::EmptyShells( CBasePlayer* pPlayer )
+{
+	CEffectData data;
+	data.m_nEntIndex = entindex();
+	DispatchEffect( "MagnumShellEject", data );
+}
+
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -121,8 +350,8 @@ void CWeapon357::PrimaryAttack( void )
 
 	if ( m_iClip1 <= 0 )
 	{
-		if ( !m_bFireOnEmpty )
-		{
+		if ( false && !m_bFireOnEmpty )
+		{ 
 			Reload();
 		}
 		else

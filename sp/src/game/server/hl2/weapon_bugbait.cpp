@@ -22,15 +22,11 @@
 // Bug Bait Weapon
 //
 
-
-
-
 #define NUM_ARC_POINTS 25
 #define ARC_TIME_UNIT  .035
 #define ARC_SPRITE_SCALE .125 
 #define ARC_SPRITE "HUD/ThrowArc.vmt"
 #define ARC_SPRITE_IMPACT "HUD/ThrowImpact.vmt"
-
 
 class CWeaponBugBait : public CBaseHLCombatWeapon
 {

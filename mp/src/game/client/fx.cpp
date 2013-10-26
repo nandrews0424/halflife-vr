@@ -51,8 +51,9 @@ CLIENTEFFECT_MATERIAL( "effects/combinemuzzle2_nocull" )
 CLIENTEFFECT_REGISTER_END()
 #endif
 
-//Whether or not we should emit a dynamic light
+//Whether or not we should emit a light, and whether it should be a dynamic light or entity light
 ConVar muzzleflash_light( "muzzleflash_light", "1", FCVAR_ARCHIVE );
+ConVar muzzleflash_use_dynamic( "muzzleflash_use_dynamic", "1", FCVAR_ARCHIVE );
 
 extern void FX_TracerSound( const Vector &start, const Vector &end, int iTracerType );
 

@@ -74,6 +74,7 @@ config.cfg
 # shader files
 *.tmp
 
+mp/game/installer/output
 sp/game/installer/output
 server_blacklist.txt
 *_gamestats.dat

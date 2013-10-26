@@ -48,7 +48,9 @@
 #include "decals.h"
 #include "obstacle_pushaway.h"
 #ifdef SIXENSE
-#include "sixense/in_sixense.h"
+
+	#include "sixense/in_sixense.h"
+
 #endif
 
 // NVNT haptic utils
@@ -191,6 +193,15 @@ void CBasePlayer::ItemPreFrame()
 		return;
 #endif
 
+#if !defined( CLIENT_DLL )
+	if ( GetActiveWeapon() )
+	{
+		SetLaserCrosshairPosition();
+	}
+#endif
+
+
+
 	pActive->ItemPreFrame();
 }
 
@@ -294,6 +305,10 @@ void CBasePlayer::ItemPostFrame()
 	// remove this line and call ImpulseCommands instead.
 	m_nImpulse = 0;
 #endif
+
+
+
+
 }
 
 
@@ -431,7 +446,7 @@ void CBasePlayer::CacheVehicleView( void )
 		if( UseVR() )
 		{
 			C_BaseAnimating *pVehicleAnimating = dynamic_cast<C_BaseAnimating *>( pVehicle );
-			if( pVehicleAnimating )
+			if( pVehicleAnimating ) 
 			{
 				int eyeAttachmentIndex = pVehicleAnimating->LookupAttachment( "vehicle_driver_eyes" );
 
@@ -815,9 +830,19 @@ void CBasePlayer::SetStepSoundTime( stepsoundtimes_t iStepSoundTime, bool bWalki
 	}
 }
 
+QAngle CBasePlayer::TorsoAngles( )
+{
+	return m_torsoAngles;	
+}
+
+Vector CBasePlayer::EyeToWeaponOffset( )
+{
+	return m_eyeToWeaponOffset;
+}
+
 Vector CBasePlayer::Weapon_ShootPosition( )
 {
-	return EyePosition();
+	return EyePosition() + EyeToWeaponOffset();
 }
 
 void CBasePlayer::SetAnimationExtension( const char *pExtension )
@@ -829,7 +854,7 @@ void CBasePlayer::SetAnimationExtension( const char *pExtension )
 //-----------------------------------------------------------------------------
 // Purpose: Set the weapon to switch to when the player uses the 'lastinv' command
 //-----------------------------------------------------------------------------
-void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon )
+void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon ) 
 {
 	m_hLastWeapon = pWeapon;
 }
@@ -855,6 +880,12 @@ bool CBasePlayer::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex 
 		if ( pViewModel )
 			pViewModel->RemoveEffects( EF_NODRAW );
 		ResetAutoaim( );
+
+#if !defined(CLIENT_DLL)
+		// update the laser crosshair for the new weapon
+		UpdateLaserCrosshair();
+#endif
+		
 		return true;
 	}
 	return false;
@@ -1067,12 +1098,14 @@ float IntervalDistance( float x, float x0, float x1 )
 
 CBaseEntity *CBasePlayer::FindUseEntity()
 {
+	// VR Changes - use point is right hand weapon offset, eyevectors still ok since the engine transfers weapon angle to eyeangle
 	Vector forward, up;
 	EyeVectors( &forward, NULL, &up );
 
 	trace_t tr;
 	// Search for objects in a sphere (tests for entities that are not solid, yet still useable)
-	Vector searchCenter = EyePosition();
+	Vector searchCenter = EyePosition() + EyeToWeaponOffset();
+
 
 	// NOTE: Some debris objects are useable too, so hit those as well
 	// A button, etc. can be made out of clip brushes, make sure it's +useable via a traceline, too.

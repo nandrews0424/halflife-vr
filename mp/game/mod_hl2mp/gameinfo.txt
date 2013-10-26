@@ -1,6 +1,6 @@
 "GameInfo"
 {
-	game	"My First HL2MP Mod"
+	game	"halflife-vr-mp"
 	title	"HALF+LIFE'"
 	title2	"deathmatch mod"
 	type multiplayer_only
@@ -74,6 +74,8 @@
 
 			// Where the game's binaries are
 			gamebin				hl2mp/bin
+
+
 
 			// Last, mount in shared HL2 loose files
 			game				|all_source_engine_paths|hl2mp

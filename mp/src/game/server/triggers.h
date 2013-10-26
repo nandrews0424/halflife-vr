@@ -53,7 +53,7 @@ public:
 	void Disable( void );
 	void Spawn( void );
 	void UpdateOnRemove( void );
-	void TouchTest(  void );
+	virtual void TouchTest(  void );
 
 	// Input handlers
 	virtual void InputEnable( inputdata_t &inputdata );

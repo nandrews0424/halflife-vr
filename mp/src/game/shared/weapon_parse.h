@@ -75,6 +75,11 @@ public:
 
 	
 public:	
+	// VR mod config for pushing the HUD in specific directions for a given model...
+	Vector					weaponHudOffset;
+	Color					laserCrosshairColor;
+	float					laserCrosshairScale;
+	
 	bool					bParsedScript;
 	bool					bLoadedHudElements;
 
@@ -127,6 +132,8 @@ public:
 
 // TF2 specific
 	bool					bShowUsageHint;							// if true, then when you receive the weapon, show a hint about it
+
+	
 
 // SERVER DLL
 

@@ -3144,8 +3144,8 @@ void CTempEnts::MuzzleFlash_Pistol_Player( ClientEntityHandle_t hEntity, int att
 
 	pSimple->GetBinding().SetBBox( origin - Vector( 4, 4, 4 ), origin + Vector( 4, 4, 4 ) );
 
-	Vector forward;
-	AngleVectors( angles, &forward, NULL, NULL );
+	Vector forward, right, up;
+	AngleVectors( angles, &forward, &right, &up );
 
 	SimpleParticle *pParticle;
 	Vector			offset;
@@ -3210,6 +3210,20 @@ void CTempEnts::MuzzleFlash_Pistol_Player( ClientEntityHandle_t hEntity, int att
 		pParticle->m_flRoll			= random->RandomInt( 0, 360 );
 		pParticle->m_flRollDelta	= 0.0f;
 	}
+
+	// adding some brass...
+	QAngle shellAngle;
+		
+	up.z += .25; // up the angle a touch...
+	VectorAngles(up, shellAngle);
+
+	// todo: get the attachment
+	Vector ejectionOrigin;
+	QAngle tmp;
+	FX_GetAttachmentTransform( hEntity, 2, &ejectionOrigin, &tmp );
+
+	EjectBrass( ejectionOrigin, shellAngle, angles, 0 );
+
 }
 
 //==================================================

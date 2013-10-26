@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer\hl2.exe" -w 1280 -h 800 -vr -novid -game "C:\Users\ryan\Documents\GitHub\halflife-vr\mp\game\mod_hl2mp\"

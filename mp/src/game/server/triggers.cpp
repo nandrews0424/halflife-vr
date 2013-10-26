@@ -1264,11 +1264,12 @@ public:
 	void Spawn( void );
 	void Activate( void );
 	bool KeyValue( const char *szKeyName, const char *szValue );
-
+	void Think( void );
 	static int ChangeList( levellist_t *pLevelList, int maxList );
 
 private:
 	void TouchChangeLevel( CBaseEntity *pOther );
+	void Untouch(CBaseEntity *pOther );
 	void ChangeLevelNow( CBaseEntity *pActivator );
 
 	void InputChangeLevel( inputdata_t &inputdata );
@@ -1301,6 +1302,9 @@ private:
 	char m_szMapName[cchMapNameMost];		// trigger_changelevel only:  next map
 	char m_szLandmarkName[cchMapNameMost];		// trigger_changelevel only:  landmark on next map
 	bool m_bTouched;
+
+	bool m_inDelayedTrigger;
+	int m_delayUntil;
 
 	// Outputs
 	COutputEvent m_OnChangeLevel;
@@ -1360,6 +1364,17 @@ bool CChangeLevel::KeyValue( const char *szKeyName, const char *szValue )
 }
 
 
+void CChangeLevel::Think()
+{
+	BaseClass::Think();
+
+	if ( m_inDelayedTrigger && gpGlobals->curtime > m_delayUntil ) 
+	{
+		ChangeLevelNow(UTIL_GetLocalPlayer());
+		return;
+	}
+}
+
 
 void CChangeLevel::Spawn( void )
 {
@@ -1379,6 +1394,9 @@ void CChangeLevel::Spawn( void )
 	{
 		SetTouch( &CChangeLevel::TouchChangeLevel );
 	}
+
+	m_inDelayedTrigger = false;
+	m_delayUntil = 0;
 
 //	Msg( "TRANSITION: %s (%s)\n", m_szMapName, m_szLandmarkName );
 }
@@ -1445,7 +1463,6 @@ CBaseEntity *CChangeLevel::FindLandmark( const char *pLandmarkName )
 	return NULL;
 }
 
-
 //-----------------------------------------------------------------------------
 // Purpose: Allows level transitions to be triggered by buttons, etc.
 //-----------------------------------------------------------------------------
@@ -1493,6 +1510,14 @@ bool CChangeLevel::IsEntityInTransition( CBaseEntity *pEntity )
 
 void CChangeLevel::NotifyEntitiesOutOfTransition()
 {
+
+	if ( m_inDelayedTrigger && gpGlobals->curtime > m_delayUntil ) 
+	{
+		ChangeLevelNow(UTIL_GetLocalPlayer());
+		return;
+	}
+	
+
 	CBaseEntity *pEnt = gEntList.FirstEnt();
 	while ( pEnt )
 	{
@@ -1543,6 +1568,8 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	CBaseEntity	*pLandmark;
 	levellist_t	levels[16];
 
+	bool isDelayedChangeLevel = m_inDelayedTrigger && gpGlobals->curtime > m_delayUntil;
+
 	Assert(!FStrEq(m_szMapName, ""));
 
 	// Don't work in deathmatch
@@ -1558,7 +1585,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	CBaseEntity *pPlayer = (pActivator && pActivator->IsPlayer()) ? pActivator : UTIL_GetLocalPlayer();
 
 	int transitionState = InTransitionVolume(pPlayer, m_szLandmarkName);
-	if ( transitionState == TRANSITION_VOLUME_SCREENED_OUT )
+	if ( transitionState == TRANSITION_VOLUME_SCREENED_OUT && !isDelayedChangeLevel)
 	{
 		DevMsg( 2, "Player isn't in the transition volume %s, aborting\n", m_szLandmarkName );
 		return;
@@ -1567,7 +1594,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 	// look for a landmark entity		
 	pLandmark = FindLandmark( m_szLandmarkName );
 
-	if ( !pLandmark )
+	if ( !pLandmark && !isDelayedChangeLevel)
 		return;
 
 	// no transition volumes, check PVS of landmark
@@ -1583,7 +1610,7 @@ void CChangeLevel::ChangeLevelNow( CBaseEntity *pActivator )
 			bool playerInPVS = engine->CheckBoxInPVS( vecSurroundMins, vecSurroundMaxs, pvs, sizeof( pvs ) );
 
 			//Assert( playerInPVS );
-			if ( !playerInPVS )
+			if ( !playerInPVS && !isDelayedChangeLevel)
 			{
 				Warning( "Player isn't in the landmark's (%s) PVS, aborting\n", m_szLandmarkName );
 #ifndef HL1_DLL
@@ -1654,6 +1681,7 @@ void CChangeLevel::TouchChangeLevel( CBaseEntity *pOther )
 		pPlayer->SetAbsVelocity( vecVelocity );
 		pPlayer->AddFlag( FL_FROZEN );
 		return;
+		
 	}
 
 	if ( !pPlayer->IsInAVehicle() && pPlayer->GetMoveType() == MOVETYPE_NOCLIP )
@@ -1662,7 +1690,25 @@ void CChangeLevel::TouchChangeLevel( CBaseEntity *pOther )
 		return;
 	}
 
-	ChangeLevelNow( pOther );
+
+	if ( !m_inDelayedTrigger )
+	{
+		if ( !pPlayer->IsInAVehicle() ) 
+		{
+			
+			m_inDelayedTrigger = true;
+			m_delayUntil = gpGlobals->curtime + 3.f;
+			engine->ClientCommand(pPlayer->edict(), "fadeout 2");
+			SetNextThink( m_delayUntil + .2f );
+		}
+		else 
+		{
+			m_inDelayedTrigger = true;
+			m_delayUntil = gpGlobals->curtime + .7f;
+			engine->ClientCommand(pPlayer->edict(), "fadeout .1");
+			SetNextThink( m_delayUntil + .05f );
+		}
+	}
 }
 
 

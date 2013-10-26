@@ -2104,6 +2104,9 @@ typedef enum
 
 	// this is the end of the global activities, private per-monster activities start here.
 	LAST_SHARED_ACTIVITY,
+
+	ACT_VM_HITDYNAMIC 
+
 } Activity;
 
 

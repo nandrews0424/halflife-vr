@@ -1,0 +1,1 @@
+/c/Program\ Files\ \(x86\)/NSIS/makensis.exe mp-installer.nsi

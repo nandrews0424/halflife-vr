@@ -196,6 +196,9 @@ void CWeapon357::ItemPostFrame()
 
 		if ( m_NextReloadActivity == ACT_VM_RELOAD_OPEN_DYNAMIC && LastReloadActivityDone() )
 		{
+			// while open, keep running the same animation
+			SendWeaponAnim( ACT_VM_RELOAD_IDLE_DYNAMIC  );  
+			
 			if ( ShouldOpenCylinder( pPlayer ) )
 			{
 				SendWeaponAnim( ACT_VM_RELOAD_OPEN_DYNAMIC );
@@ -206,7 +209,7 @@ void CWeapon357::ItemPostFrame()
 		else if (  m_NextReloadActivity == ACT_VM_RELOAD_FULL_DYNAMIC && !m_bFullNewShells && LastReloadActivityDone() ) 
 		{
 			// while open, keep running the same animation
-			SendWeaponAnim( ACT_VM_RELOAD_FULL_DYNAMIC );  
+			SendWeaponAnim( ACT_VM_RELOAD_FULL_DYNAMIC );
 			
 			if ( ShouldEmptyShells( pPlayer ))
 			{
@@ -227,7 +230,7 @@ void CWeapon357::ItemPostFrame()
 			SendWeaponAnim( ACT_VM_RELOAD_INSERT_DYNAMIC );
 			SetNextReloadActivity(ACT_VM_RELOAD_FULL_DYNAMIC);
 			m_bFullNewShells = true;
-		}
+		} 
 		else if (  m_NextReloadActivity == ACT_VM_RELOAD_FULL_DYNAMIC && m_bFullNewShells && LastReloadActivityDone() ) 
 		{
 			// while open, keep running the same animation
@@ -282,7 +285,7 @@ bool CWeapon357::GetLocalAcceleration( CBasePlayer* pPlayer, Vector& localAccele
 	
 	m_lastVelocity = velocity;
 	
-	// translate to weapon space.
+	// translate to weapon space. 
 	VMatrix worldFromWeapon;
 	AngleMatrix(pPlayer->EyeAngles(), worldFromWeapon.As3x4());
 	localAcceleration = worldFromWeapon.InverseTR() * accel;
@@ -320,7 +323,7 @@ bool CWeapon357::ShouldEmptyShells( CBasePlayer* pPlayer )
 	pPlayer->EyeVectors(&aimDirection);
 	Vector up(0,0,1);
 
-	return up.Dot(aimDirection) > .68f;
+	return up.Dot(aimDirection) > .75f;
 }
 
 
@@ -348,7 +351,7 @@ void CWeapon357::PrimaryAttack( void )
 	if ( m_iClip1 <= 0 )
 	{
 		if ( false && !m_bFireOnEmpty )
-		{
+		{ 
 			Reload();
 		}
 		else

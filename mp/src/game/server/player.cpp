@@ -115,6 +115,8 @@ ConVar cl_backspeed( "cl_backspeed", "450", FCVAR_REPLICATED | FCVAR_CHEAT );
 
 // This is declared in the engine, too
 ConVar	sv_noclipduringpause( "sv_noclipduringpause", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "If cheats are enabled, then you can noclip with the game paused (for doing screenshots, etc.)." );
+ConVar	crosshair_laser( "crosshair_laser", "0", FCVAR_REPLICATED, "Enables crosshair laser");
+
 
 extern ConVar sv_maxunlag;
 extern ConVar sv_turbophysics;
@@ -584,6 +586,11 @@ CBasePlayer::CBasePlayer( )
 	m_bForceOrigin = false;
 	m_hVehicle = NULL;
 	m_pCurrentCommand = NULL;
+	
+	// tracker related values
+	m_eyeToWeaponOffset.Init();
+	m_eyeOffset.Init();
+	m_torsoAngles.Init();
 	
 	// Setup our default FOV
 	m_iDefaultFOV = g_pGameRules->DefaultFOV();
@@ -1909,13 +1916,13 @@ WaterMove
 #ifdef HL2_DLL
 
 // test for HL2 drowning damage increase (aux power used instead)
-#define AIRTIME						15		// lung full of air lasts this many seconds
+#define AIRTIME						20		// lung full of air lasts this many seconds
 #define DROWNING_DAMAGE_INITIAL		2
 #define DROWNING_DAMAGE_MAX			5
 
 #else
 
-#define AIRTIME						15		// lung full of air lasts this many seconds
+#define AIRTIME						20		// lung full of air lasts this many seconds
 #define DROWNING_DAMAGE_INITIAL		2
 #define DROWNING_DAMAGE_MAX			5
 
@@ -3311,7 +3318,8 @@ void CBasePlayer::PhysicsSimulate( void )
 	}
 #endif // _DEBUG
 
-	if ( int numUsrCmdProcessTicksMax = sv_maxusrcmdprocessticks.GetInt() )
+	int numUsrCmdProcessTicksMax = sv_maxusrcmdprocessticks.GetInt();
+	if ( gpGlobals->maxClients != 1 && numUsrCmdProcessTicksMax ) // don't apply this filter in SP games
 	{
 		// Grant the client some time buffer to execute user commands
 		m_flMovementTimeForUserCmdProcessingRemaining += TICK_INTERVAL;
@@ -3643,8 +3651,10 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		VectorCopy ( ucmd->viewangles, pl.v_angle );
 	}
 
+	// tracker related fields
 	VectorCopy(ucmd->viewToWeaponOffset, m_eyeToWeaponOffset);
-
+	VectorCopy(ucmd->eyeOffset, m_eyeOffset);
+	m_torsoAngles =	QAngle(0, ucmd->torsoYaw, 0);
 
 	// Handle FL_FROZEN.
 	// Prevent player moving for some seconds after New Game, so that they pick up everything
@@ -5039,6 +5049,11 @@ void CBasePlayer::Spawn( void )
 	UpdateLastKnownArea();
 
 	m_weaponFiredTimer.Invalidate();
+
+	if ( m_laserCrosshair == NULL )
+	{
+		m_laserCrosshair = CLaserCrosshair::Create(GetAbsOrigin(), this, true);
+	}
 }
 
 void CBasePlayer::Activate( void )
@@ -9318,6 +9333,65 @@ void CBasePlayer::AdjustDrownDmg( int nAmount )
 		m_idrowndmg = m_idrownrestored;
 	}
 }
+
+
+// update based on the weapon info
+void CBasePlayer::UpdateLaserCrosshair( void )
+{
+	if ( m_laserCrosshair == NULL )
+	{
+		m_laserCrosshair = CLaserCrosshair::Create(GetAbsOrigin(), this, true);
+	}
+	
+	if ( !crosshair_laser.GetBool() )
+		return;
+	
+	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
+	if ( pWeapon ) 
+	{
+		m_laserCrosshair->TurnOn();
+		const FileWeaponInfo_t info = pWeapon->GetWpnData();
+		m_laserCrosshair->SetScale(info.laserCrosshairScale);
+		m_laserCrosshair->SetTransparency( kRenderGlow, info.laserCrosshairColor.r(), info.laserCrosshairColor.g(), info.laserCrosshairColor.b(), info.laserCrosshairColor.a(), kRenderFxNoDissipation );
+	}
+	else
+	{
+		m_laserCrosshair->TurnOff();
+	}
+}
+
+void CBasePlayer::SetLaserCrosshairPosition( void )
+{
+	if ( m_laserCrosshair == NULL )
+	{
+		m_laserCrosshair = CLaserCrosshair::Create(GetAbsOrigin(), this, true);
+	}
+
+	if ( !crosshair_laser.GetBool() )
+	{
+		m_laserCrosshair->TurnOff();
+		return;
+	} 
+	else if ( !m_laserCrosshair->IsOn() )
+	{
+		m_laserCrosshair->TurnOn();
+	}
+
+	CBaseViewModel* pViewModel = GetViewModel();
+	if ( !m_laserCrosshair || !pViewModel )
+		return;
+
+	Vector origin, forward, traceEnd;
+	pViewModel->GetAttachment("muzzle", origin, &forward);
+
+	origin = Weapon_ShootPosition(); 
+
+	traceEnd = origin + ( forward * MAX_TRACE_LENGTH );
+	trace_t	tr;
+	UTIL_TraceLine( origin, traceEnd, (MASK_SHOT & ~CONTENTS_WINDOW), this, COLLISION_GROUP_NONE, &tr );
+	m_laserCrosshair->SetLaserPosition( tr.endpos, tr.plane.normal );
+}
+
 
 
 

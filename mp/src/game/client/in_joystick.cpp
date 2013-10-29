@@ -28,6 +28,8 @@
 #include "math.h"
 #include "tier1/convar_serverbounded.h"
 #include "cam_thirdperson.h"
+#include "vr/vr_controller.h"
+
 
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
@@ -675,9 +677,13 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 		m_fJoystickAdvancedInit = true;
 	}
 
+
+	int motionTrackerJoystickOverride = 1;  // always hand off to the motion tracker
+	
 	// Verify that the user wants to use the joystick
-	if ( !in_joystick.GetInt() )
-		return;
+	if ( (!in_joystick.GetInt() || 0 == inputsystem->GetJoystickCount()) && motionTrackerJoystickOverride == 0)
+		return; 
+
 
 	// Reinitialize the 'advanced joystick' system if hotplugging has caused us toggle between some/none joysticks.
 	bool haveJoysticks = ( inputsystem->GetJoystickCount() > 0 );
@@ -688,7 +694,7 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 	}
 
 	// Verify that a joystick is available
-	if ( !haveJoysticks )
+	if ( !haveJoysticks && motionTrackerJoystickOverride == 0 )
 		return; 
 
 	if ( m_flRemainingJoystickSampleTime <= 0 )
@@ -734,7 +740,17 @@ void CInput::JoyStickMove( float frametime, CUserCmd *cmd )
 		gameAxes[idx].value = fAxisValue;
 		gameAxes[idx].controlType = m_rgAxes[i].ControlMap;
 	}
-
+	
+	if ( motionTrackerJoystickOverride > 0 ) 
+	{
+		g_MotionTracker()->overrideJoystickInputs(
+			gameAxes[GAME_AXIS_SIDE].value,
+			gameAxes[GAME_AXIS_FORWARD].value,
+			gameAxes[GAME_AXIS_YAW].value,
+			gameAxes[GAME_AXIS_PITCH].value
+		);
+	}
+	
 	// Re-map the axis values if necessary, based on the joystick configuration
 	if ( (joy_advanced.GetInt() == 0) && (in_jlook.state & 1) )
 	{

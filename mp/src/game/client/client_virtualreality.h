@@ -30,7 +30,8 @@ enum HeadtrackMovementMode_t
 
 	HMM_LAST,
 
-	HMM_NOOVERRIDE = HMM_LAST		// Used as a retrun from ShouldOverrideHeadtrackControl(), not an actual mode.
+	HMM_NOOVERRIDE = HMM_LAST,		// Used as a retrun from ShouldOverrideHeadtrackControl(), not an actual mode.
+	HMM_SHOOTTRACK  // Shoot per tracked offset & move view relative
 };
 
 
@@ -92,7 +93,7 @@ public:
 	bool OverridePlayerMotion( float flInputSampleFrametime, const QAngle &oldAngles, const QAngle &curAngles, const Vector &curMotion, QAngle *pNewAngles, Vector *pNewMotion );
 	bool OverrideWeaponHudAimVectors ( Vector *pAimOrigin, Vector *pAimDirection );
 	bool CurrentlyZoomed();
-	void OverrideTorsoTransform( const Vector & position, const QAngle & angles ) ;
+	void OverrideTorsoTransform( const Vector & position, QAngle & angles ) ;
 	void CancelTorsoTransformOverride( ) ;
 	void GetHUDBounds( Vector *pViewer, Vector *pUL, Vector *pUR, Vector *pLL, Vector *pLR );
 	void RenderHUDQuad( bool bBlackout, bool bTranslucent );

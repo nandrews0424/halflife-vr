@@ -361,6 +361,12 @@ void CPlayerMove::RunCommand ( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 		}
 	}
 
+	// Assign the tracked weapon offset
+	player->m_eyeToWeaponOffset = ucmd->viewToWeaponOffset;
+	player->m_eyeOffset = ucmd->eyeOffset;
+	player->m_torsoAngles = QAngle(0, ucmd->torsoYaw, 0);
+
+
 	/*
 	// TODO:  We can check whether the player is sending more commands than elapsed real time
 	cmdtimeremaining -= ucmd->msec;
@@ -416,8 +422,6 @@ void CPlayerMove::RunCommand ( CBasePlayer *player, CUserCmd *ucmd, IMoveHelper 
 	{
 		player->pl.v_angle = ucmd->viewangles + player->pl.anglechange;
 	}
-
-	player->eyeToWeaponOffset = ucmd->viewToWeaponOffset;
 
 	// Call standard client pre-think
 	RunPreThink( player );
